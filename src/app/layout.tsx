@@ -1,10 +1,15 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
+import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/cart/CartDrawer';
 import './globals.css';
+
+const ThreeDWelcome = dynamic(() => import('@/components/welcome/ThreeDWelcome'), {
+  ssr: false,
+});
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="font-sans antialiased bg-white text-neutral-900">
+        <ThreeDWelcome />
         <Header />
         <CartDrawer />
         <main className="min-h-screen">{children}</main>
