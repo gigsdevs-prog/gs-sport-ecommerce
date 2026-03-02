@@ -5,14 +5,37 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy, Component } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
 
-// Lazy load the 3D scene for performance
+// Lazy load Canvas AND Scene together to avoid partial failures
+const Canvas = lazy(() =>
+  import('@react-three/fiber').then((mod) => ({ default: mod.Canvas }))
+);
 const Scene3D = lazy(() =>
   import('./Scene3D').then((mod) => ({ default: mod.Scene }))
 );
+
+// ---- Error Boundary for 3D scene ----
+class Welcome3DErrorBoundary extends Component<
+  { children: React.ReactNode; onError: () => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; onError: () => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
 
 // ---- Loading Progress Bar ----
 function LoadingIndicator({ progress }: { progress: number }) {
@@ -139,23 +162,27 @@ export default function ThreeDWelcome() {
             }
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Canvas
-              camera={{ position: [0, 0.5, 5], fov: 35 }}
-              dpr={[1, 1.5]}
-              gl={{
-                antialias: true,
-                alpha: true,
-                powerPreference: 'high-performance',
-                stencil: false,
-                depth: true,
-              }}
-              shadows={false}
-              onCreated={() => setSceneReady(true)}
-            >
+            <Welcome3DErrorBoundary onError={handleSkip}>
               <Suspense fallback={null}>
-                <Scene3D />
+                <Canvas
+                  camera={{ position: [0, 0.5, 5], fov: 35 }}
+                  dpr={[1, 1.5]}
+                  gl={{
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance',
+                    stencil: false,
+                    depth: true,
+                  }}
+                  shadows={false}
+                  onCreated={() => setSceneReady(true)}
+                >
+                  <Suspense fallback={null}>
+                    <Scene3D />
+                  </Suspense>
+                </Canvas>
               </Suspense>
-            </Canvas>
+            </Welcome3DErrorBoundary>
           </motion.div>
 
           {/* Text Overlay */}
