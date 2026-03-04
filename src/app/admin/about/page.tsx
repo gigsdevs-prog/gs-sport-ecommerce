@@ -59,19 +59,63 @@ export default function AdminAboutPage() {
 
   useEffect(() => { fetchAbout(); }, [fetchAbout]);
 
-  const uploadImage = async (file: File) => {
-    setUploading(true);
-    try {
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('Image must be less than 10MB');
-        setUploading(false);
+  // Compress image on client side to stay within Vercel's body size limit
+  const compressImage = (file: File, maxWidth = 1920, quality = 0.85): Promise<File> => {
+    return new Promise((resolve) => {
+      // If already small enough (<4MB), skip compression
+      if (file.size <= 4 * 1024 * 1024) {
+        resolve(file);
         return;
       }
 
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        // Scale down if wider than maxWidth
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressed = new File([blob], file.name, { type: 'image/jpeg' });
+              resolve(compressed);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file); // Fallback to original
+      };
+      img.src = url;
+    });
+  };
+
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    try {
+      // Compress large images
+      const processedFile = await compressImage(file);
+
       // Use server-side API to bypass RLS issues
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', processedFile);
       if (imageUrl) {
         formData.append('oldUrl', imageUrl);
       }
