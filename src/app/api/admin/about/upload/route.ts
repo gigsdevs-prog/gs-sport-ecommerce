@@ -37,6 +37,20 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminSupabaseClient();
 
+    // 2.5 Ensure 'about' bucket exists
+    const { data: buckets } = await adminClient.storage.listBuckets();
+    const aboutBucket = buckets?.find((b: { id: string }) => b.id === 'about');
+    if (!aboutBucket) {
+      const { error: bucketError } = await adminClient.storage.createBucket('about', {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB
+      });
+      if (bucketError && !bucketError.message?.includes('already exists')) {
+        console.error('Failed to create about bucket:', bucketError);
+        return NextResponse.json({ error: 'Storage setup failed: ' + bucketError.message }, { status: 500 });
+      }
+    }
+
     // 3. Delete previous image if provided
     if (oldUrl) {
       const parts = oldUrl.split('/about/');

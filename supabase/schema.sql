@@ -1,4 +1,4 @@
--- ============================================
+ -- ============================================
 -- GS SPORT - Supabase Database Schema
 -- Run this in the Supabase SQL Editor
 -- ============================================
@@ -422,11 +422,35 @@ CREATE POLICY "Admins can upload product images" ON storage.objects
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
+CREATE POLICY "Admins can update product images" ON storage.objects
+  FOR UPDATE USING (
+    bucket_id = 'products' AND
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can delete product images" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'products' AND
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
 CREATE POLICY "Anyone can view banner images" ON storage.objects
   FOR SELECT USING (bucket_id = 'banners');
 
 CREATE POLICY "Admins can upload banner images" ON storage.objects
   FOR INSERT WITH CHECK (
+    bucket_id = 'banners' AND
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can update banner images" ON storage.objects
+  FOR UPDATE USING (
+    bucket_id = 'banners' AND
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can delete banner images" ON storage.objects
+  FOR DELETE USING (
     bucket_id = 'banners' AND
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
@@ -459,6 +483,18 @@ CREATE POLICY "Anyone can view about images" ON storage.objects
 
 CREATE POLICY "Admins can upload about images" ON storage.objects
   FOR INSERT WITH CHECK (
+    bucket_id = 'about' AND
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can update about images" ON storage.objects
+  FOR UPDATE USING (
+    bucket_id = 'about' AND
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can delete about images" ON storage.objects
+  FOR DELETE USING (
     bucket_id = 'about' AND
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );

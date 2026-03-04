@@ -3,6 +3,7 @@
 // ============================================
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export function createServerSupabaseClient() {
@@ -36,14 +37,13 @@ export function createServerSupabaseClient() {
 }
 
 export function createAdminSupabaseClient() {
-  return createServerClient(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        get() { return undefined; },
-        set() {},
-        remove() {},
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     }
   );
