@@ -24,10 +24,7 @@ export async function PATCH(request: Request) {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     const adminClient = createAdminSupabaseClient();
-    const { error } = await adminClient.from('orders').update({
-      ...updateData,
-      updated_at: new Date().toISOString(),
-    }).eq('id', id);
+    const { error } = await adminClient.from('orders').update(updateData).eq('id', id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });

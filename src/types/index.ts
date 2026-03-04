@@ -42,14 +42,13 @@ export interface CartItem {
 
 export interface Order {
   id: string;
-  user_id: string;
+  user_id: string | null;
   status: OrderStatus;
   payment_method: 'cash' | 'card';
   total: number;
   subtotal: number;
   shipping: number;
   tax: number;
-  stripe_payment_intent_id: string | null;
   bog_order_id: string | null;
   bog_payment_hash: string | null;
   shipping_address: ShippingAddress;

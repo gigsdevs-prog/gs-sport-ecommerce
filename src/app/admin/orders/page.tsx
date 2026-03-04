@@ -24,7 +24,7 @@ export default function AdminOrdersPage() {
     try {
       let query = supabase
         .from('orders')
-        .select('*, items:order_items(*, product:products(name, images)), user:users(email, full_name)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (statusFilter) {
