@@ -49,6 +49,8 @@ export interface Order {
   shipping: number;
   tax: number;
   stripe_payment_intent_id: string | null;
+  bog_order_id: string | null;
+  bog_payment_hash: string | null;
   shipping_address: ShippingAddress;
   items?: OrderItem[];
   user?: UserProfile;
@@ -67,7 +69,7 @@ export interface OrderItem {
   color: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'awaiting_payment' | 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface ShippingAddress {
   firstName: string;

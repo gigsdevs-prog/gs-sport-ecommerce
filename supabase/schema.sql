@@ -127,12 +127,13 @@ CREATE INDEX idx_products_active ON public.products(active) WHERE active = true;
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('awaiting_payment', 'pending', 'processing', 'shipped', 'delivered', 'cancelled')),
   total NUMERIC(10, 2) NOT NULL DEFAULT 0,
   subtotal NUMERIC(10, 2) NOT NULL DEFAULT 0,
   shipping NUMERIC(10, 2) NOT NULL DEFAULT 0,
   tax NUMERIC(10, 2) NOT NULL DEFAULT 0,
-  stripe_payment_intent_id TEXT,
+  bog_order_id TEXT,
+  bog_payment_hash TEXT,
   shipping_address JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

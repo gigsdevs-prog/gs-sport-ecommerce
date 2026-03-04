@@ -14,14 +14,14 @@ import Button from '@/components/ui/Button';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
+  const orderId = searchParams.get('order_id');
   const { clearCart } = useCartStore();
 
   useEffect(() => {
-    if (sessionId) {
+    if (orderId) {
       clearCart();
     }
-  }, [sessionId, clearCart]);
+  }, [orderId, clearCart]);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-20 text-center">

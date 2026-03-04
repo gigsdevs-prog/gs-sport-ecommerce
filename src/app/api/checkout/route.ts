@@ -1,10 +1,10 @@
 // ============================================
-// GS SPORT - Checkout API Route
+// GS SPORT - Checkout API Route (BOG iPay)
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
+import { createPaymentOrder } from '@/lib/bog-ipay';
 
 export async function POST(request: Request) {
   try {
@@ -18,42 +18,59 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
     }
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      customer_email: user?.email,
-      line_items: items.map((item: { name: string; price: number; quantity: number; image: string }) => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-            images: item.image ? [item.image] : [],
-          },
-          unit_amount: Math.round(item.price * 100),
-        },
+    const adminClient = createAdminSupabaseClient();
+
+    // Create order in DB first (status: awaiting_payment)
+    const { data: order, error: orderError } = await adminClient
+      .from('orders')
+      .insert({
+        user_id: user?.id || null,
+        status: 'awaiting_payment',
+        total,
+        subtotal,
+        shipping,
+        tax,
+        shipping_address,
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error('Order creation error:', orderError);
+      return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+    }
+
+    // Create order items
+    const orderItems = items.map((item: { product_id: string; quantity: number; price: number; size: string; color: string }) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size || '',
+      color: item.color || '',
+    }));
+    await adminClient.from('order_items').insert(orderItems);
+
+    // Create BOG iPay payment
+    const payment = await createPaymentOrder({
+      shopOrderId: order.id,
+      amount: total,
+      currency: 'GEL',
+      items: items.map((item: { name: string; price: number; quantity: number; product_id: string }) => ({
+        name: item.name,
+        price: item.price,
         quantity: item.quantity,
+        productId: item.product_id,
       })),
-      metadata: {
-        user_id: user?.id || 'guest',
-        shipping_address: JSON.stringify(shipping_address),
-        items: JSON.stringify(items.map((item: { product_id: string; quantity: number; price: number; size: string; color: string }) => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          price: item.price,
-          size: item.size,
-          color: item.color,
-        }))),
-        subtotal: subtotal.toString(),
-        shipping: shipping.toString(),
-        tax: tax.toString(),
-        total: total.toString(),
-      },
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/checkout`,
     });
 
-    return NextResponse.json({ url: session.url });
+    // Store BOG payment order ID on the order
+    await adminClient
+      .from('orders')
+      .update({ bog_order_id: payment.orderId })
+      .eq('id', order.id);
+
+    return NextResponse.json({ url: payment.redirectUrl });
   } catch (error: unknown) {
     console.error('Checkout error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';

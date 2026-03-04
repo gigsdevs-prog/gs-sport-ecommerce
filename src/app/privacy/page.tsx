@@ -22,7 +22,7 @@ export default function PrivacyPage() {
             <p>When you use {SITE_NAME}, we may collect the following information:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Personal details (name, email, phone) when you create an account or place an order.</li>
-              <li>Payment information processed securely through Stripe — we never store your card details.</li>
+              <li>Payment information processed securely through BOG iPay (Bank of Georgia) — we never store your card details.</li>
               <li>Shipping address for order delivery.</li>
               <li>Usage data including pages visited, browser type, and device information.</li>
             </ul>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold text-neutral-900">3. Data Sharing</h2>
             <p>We do not sell your personal data. We may share information with:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Payment processors (Stripe) to complete transactions.</li>
+              <li>Payment processors (BOG iPay) to complete transactions.</li>
               <li>Shipping partners to deliver your orders.</li>
               <li>Analytics tools to improve our services.</li>
             </ul>

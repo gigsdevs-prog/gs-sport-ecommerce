@@ -36,7 +36,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold text-neutral-900">3. Orders and Payment</h2>
             <ul className="list-disc pl-5 space-y-1">
               <li>Placing an order constitutes an offer to purchase. We reserve the right to refuse any order.</li>
-              <li>Payment is processed securely through Stripe at the time of checkout.</li>
+              <li>Payment is processed securely through BOG iPay (Bank of Georgia) at the time of checkout.</li>
               <li>Orders may be cancelled within 1 hour of placement.</li>
             </ul>
           </section>

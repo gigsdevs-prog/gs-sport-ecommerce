@@ -238,7 +238,7 @@ export default function CheckoutPage() {
 
             <p className="mt-4 text-xs text-neutral-400 text-center flex items-center justify-center gap-1">
               <Lock size={12} />
-              Secure checkout powered by Stripe
+              Secure payment via Bank of Georgia
             </p>
           </div>
         </motion.div>

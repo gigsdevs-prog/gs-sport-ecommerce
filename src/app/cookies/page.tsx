@@ -59,7 +59,7 @@ export default function CookiesPage() {
             <p>We use the following third-party services that may set cookies:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>Supabase</strong> — Authentication and session management.</li>
-              <li><strong>Stripe</strong> — Secure payment processing.</li>
+              <li><strong>BOG iPay</strong> — Secure payment processing via Bank of Georgia.</li>
               <li><strong>Vercel</strong> — Analytics and performance monitoring.</li>
             </ul>
           </section>

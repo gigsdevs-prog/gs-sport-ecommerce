@@ -32,6 +32,7 @@ export const DEFAULT_CONTENT: Record<string, string> = {
 };
 
 export const ORDER_STATUSES = [
+  { value: 'awaiting_payment', label: 'Awaiting Payment', color: 'bg-orange-100 text-orange-800' },
   { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'processing', label: 'Processing', color: 'bg-blue-100 text-blue-800' },
   { value: 'shipped', label: 'Shipped', color: 'bg-purple-100 text-purple-800' },

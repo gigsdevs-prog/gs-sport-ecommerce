@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     q: 'What payment methods do you accept?',
-    a: 'We accept all major credit/debit cards (Visa, Mastercard, American Express) through our secure payment partner Stripe.',
+    a: 'We accept all major credit/debit cards (Visa, Mastercard, American Express) through BOG iPay (Bank of Georgia).',
   },
   {
     q: 'How do I find my size?',

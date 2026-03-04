@@ -1,77 +1,117 @@
 // ============================================
-// GS SPORT - Stripe Webhook Handler
+// GS SPORT - BOG iPay Webhook / Callback Handler
+// Called by BOG after payment completion
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
-import { stripe } from '@/lib/stripe/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/server';
-import Stripe from 'stripe';
+import { getPaymentStatus } from '@/lib/bog-ipay';
 
 export async function POST(request: Request) {
-  const body = await request.text();
-  const sig = headers().get('stripe-signature')!;
-
-  let event: Stripe.Event;
-
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Webhook signature verification failed';
-    console.error('Webhook error:', message);
-    return NextResponse.json({ error: message }, { status: 400 });
-  }
+    const body = await request.json();
+    const { order_id, payment_hash, status } = body;
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
+    if (!order_id) {
+      return NextResponse.json({ error: 'Missing order_id' }, { status: 400 });
+    }
 
+    // Verify payment status with BOG iPay
+    let paymentStatus: string;
     try {
-      const supabase = createAdminSupabaseClient();
-      const metadata = session.metadata!;
-      const items = JSON.parse(metadata.items);
-      const shippingAddress = JSON.parse(metadata.shipping_address);
+      const bogStatus = await getPaymentStatus(order_id);
+      paymentStatus = bogStatus.status;
+    } catch {
+      // If we can't verify with BOG, use the status from callback
+      paymentStatus = status || 'unknown';
+    }
 
-      // Create order
-      const { data: order, error: orderError } = await supabase
+    const supabase = createAdminSupabaseClient();
+
+    if (paymentStatus === 'COMPLETED' || paymentStatus === 'CAPTURED') {
+      // Find order by BOG order ID
+      const { data: order, error: findError } = await supabase
         .from('orders')
-        .insert({
-          user_id: metadata.user_id !== 'guest' ? metadata.user_id : null,
-          status: 'pending',
-          total: parseFloat(metadata.total),
-          subtotal: parseFloat(metadata.subtotal),
-          shipping: parseFloat(metadata.shipping),
-          tax: parseFloat(metadata.tax),
-          stripe_payment_intent_id: session.payment_intent as string,
-          shipping_address: shippingAddress,
-        })
-        .select()
+        .select('*')
+        .eq('bog_order_id', order_id)
         .single();
 
-      if (orderError) throw orderError;
-
-      // Create order items
-      const orderItems = items.map((item: { product_id: string; quantity: number; price: number; size: string; color: string }) => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size || '',
-        color: item.color || '',
-      }));
-
-      await supabase.from('order_items').insert(orderItems);
-
-      // Update product stock
-      for (const item of items) {
-        await supabase.rpc('decrease_stock', {
-          p_id: item.product_id,
-          amount: item.quantity,
-        });
+      if (findError || !order) {
+        console.error('Order not found for BOG order:', order_id);
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
-    } catch (error) {
-      console.error('Order creation error:', error);
+
+      // Skip if already processed
+      if (order.status === 'pending' || order.status === 'processing') {
+        return NextResponse.json({ received: true });
+      }
+
+      // Update order status to pending (paid, ready for processing)
+      await supabase
+        .from('orders')
+        .update({
+          status: 'pending',
+          bog_payment_hash: payment_hash || null,
+        })
+        .eq('id', order.id);
+
+      // Get order items and update stock
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', order.id);
+
+      if (orderItems) {
+        for (const item of orderItems) {
+          await supabase.rpc('decrease_stock', {
+            p_id: item.product_id,
+            amount: item.quantity,
+          });
+        }
+      }
+    } else if (paymentStatus === 'REJECTED' || paymentStatus === 'ERROR') {
+      // Payment failed — update order status
+      const { data: order } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('bog_order_id', order_id)
+        .single();
+
+      if (order) {
+        await supabase
+          .from('orders')
+          .update({ status: 'cancelled' })
+          .eq('id', order.id);
+      }
     }
+
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+  }
+}
+
+// Also handle GET for redirect-based callbacks
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const orderId = url.searchParams.get('order_id');
+
+  if (!orderId) {
+    return NextResponse.redirect(new URL('/checkout', request.url));
   }
 
-  return NextResponse.json({ received: true });
+  // Verify with BOG
+  try {
+    const status = await getPaymentStatus(orderId);
+    if (status.status === 'COMPLETED' || status.status === 'CAPTURED') {
+      return NextResponse.redirect(
+        new URL(`/checkout/success?order_id=${status.shop_order_id}`, request.url)
+      );
+    }
+  } catch {
+    // Fall through to checkout page
+  }
+
+  return NextResponse.redirect(new URL('/checkout', request.url));
 }
