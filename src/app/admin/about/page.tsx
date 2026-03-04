@@ -62,6 +62,13 @@ export default function AdminAboutPage() {
   const uploadImage = async (file: File) => {
     setUploading(true);
     try {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Image must be less than 10MB');
+        setUploading(false);
+        return;
+      }
+
       // Use server-side API to bypass RLS issues
       const formData = new FormData();
       formData.append('file', file);
@@ -74,10 +81,19 @@ export default function AdminAboutPage() {
         body: formData,
       });
 
-      const result = await response.json();
+      let result;
+      const text = await response.text();
+      try {
+        result = JSON.parse(text);
+      } catch {
+        console.error('Non-JSON response:', text);
+        toast.error('Server error: ' + (text.substring(0, 100) || 'Unknown'));
+        setUploading(false);
+        return;
+      }
 
       if (!response.ok) {
-        toast.error(result.error || 'Upload failed');
+        toast.error(result.error || 'Upload failed: ' + response.status);
         setUploading(false);
         return;
       }
@@ -86,7 +102,7 @@ export default function AdminAboutPage() {
       toast.success('Image uploaded!');
     } catch (err) {
       console.error('Upload exception:', err);
-      toast.error('Upload failed — please try again');
+      toast.error('Upload failed: ' + (err instanceof Error ? err.message : 'Network error'));
     } finally {
       setUploading(false);
     }
