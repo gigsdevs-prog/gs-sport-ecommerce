@@ -100,24 +100,8 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
     mounted.current = true;
     loadContent();
 
-    // Subscribe to Supabase Realtime so admin changes reflect instantly
-    const supabase = createClient();
-    const channel = supabase
-      .channel('site_content_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_content' },
-        () => {
-          // Re-fetch all content when any row changes
-          fetchPromise = null; // clear cache so we get fresh data
-          if (mounted.current) loadContent();
-        }
-      )
-      .subscribe();
-
     return () => {
       mounted.current = false;
-      supabase.removeChannel(channel);
     };
   }, [loadContent]);
 

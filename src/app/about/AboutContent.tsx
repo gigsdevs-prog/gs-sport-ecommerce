@@ -55,18 +55,6 @@ export default function AboutContent() {
       setLoading(false);
     };
     fetchAbout();
-
-    // Realtime: auto-refresh when admin edits about page
-    const channel = supabase
-      .channel('about_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'about_page' }, () => {
-        fetchAbout();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   if (loading) {

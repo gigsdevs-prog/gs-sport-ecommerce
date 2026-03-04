@@ -115,20 +115,8 @@ export default function CategoriesGrid() {
 
     fetchData();
 
-    // Realtime: re-fetch when admin changes categories or products
-    const channel = supabase
-      .channel('categories_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        if (mounted.current) fetchData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        if (mounted.current) fetchData();
-      })
-      .subscribe();
-
     return () => {
       mounted.current = false;
-      supabase.removeChannel(channel);
     };
   }, []);
 

@@ -39,17 +39,8 @@ export default function HeroSection() {
     };
     fetchBanners();
 
-    // Realtime: re-fetch banners when admin changes them
-    const channel = supabase
-      .channel('banners_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, () => {
-        if (mounted.current) fetchBanners();
-      })
-      .subscribe();
-
     return () => {
       mounted.current = false;
-      supabase.removeChannel(channel);
     };
   }, []);
 

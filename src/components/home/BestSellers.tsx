@@ -41,17 +41,8 @@ export default function BestSellers() {
     };
     fetchProducts();
 
-    // Realtime: re-fetch when admin changes products
-    const channel = supabase
-      .channel('bestsellers_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        if (mounted.current) fetchProducts();
-      })
-      .subscribe();
-
     return () => {
       mounted.current = false;
-      supabase.removeChannel(channel);
     };
   }, []);
 
