@@ -15,6 +15,8 @@ import { slugify } from '@/utils';
 import toast from 'react-hot-toast';
 import type { Category } from '@/types';
 
+const supabase = createClient();
+
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,51 +26,75 @@ export default function AdminCategoriesPage() {
   const [newSlug, setNewSlug] = useState('');
   const [editName, setEditName] = useState('');
   const [editSlug, setEditSlug] = useState('');
-  const supabase = createClient();
-
   const fetchCategories = useCallback(async () => {
-    const { data } = await supabase.from('categories').select('*').order('name');
-    if (data) setCategories(data);
-    setLoading(false);
-  }, [supabase]);
+    try {
+      const { data, error } = await supabase.from('categories').select('*').order('name');
+      if (error) console.error('Failed to fetch categories:', error);
+      if (data) setCategories(data);
+    } catch (err) {
+      console.error('Categories fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const { error } = await supabase.from('categories').insert({
-      name: newName,
-      slug: newSlug || slugify(newName),
-      active: true,
-    });
-    if (error) { toast.error('Failed to create'); return; }
-    toast.success('Category created');
-    setNewName(''); setNewSlug(''); setShowNew(false);
-    fetchCategories();
+    try {
+      const response = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName, slug: newSlug || slugify(newName), active: true }),
+      });
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to create'); return; }
+      toast.success('Category created');
+      setNewName(''); setNewSlug(''); setShowNew(false);
+      fetchCategories();
+    } catch (err) { console.error(err); toast.error('Network error'); }
   };
 
   const handleUpdate = async (id: string) => {
-    const { error } = await supabase.from('categories').update({
-      name: editName,
-      slug: editSlug,
-    }).eq('id', id);
-    if (error) { toast.error('Failed to update'); return; }
-    toast.success('Category updated');
-    setEditingId(null);
-    fetchCategories();
+    try {
+      const response = await fetch('/api/admin/categories', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name: editName, slug: editSlug }),
+      });
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to update'); return; }
+      toast.success('Category updated');
+      setEditingId(null);
+      fetchCategories();
+    } catch (err) { console.error(err); toast.error('Network error'); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this category?')) return;
-    const { error } = await supabase.from('categories').delete().eq('id', id);
-    if (error) { toast.error('Failed to delete'); return; }
-    toast.success('Category deleted');
-    setCategories(prev => prev.filter(c => c.id !== id));
+    try {
+      const response = await fetch('/api/admin/categories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to delete'); return; }
+      toast.success('Category deleted');
+      setCategories(prev => prev.filter(c => c.id !== id));
+    } catch (err) { console.error(err); toast.error('Network error'); }
   };
 
   const handleToggleActive = async (id: string, active: boolean) => {
-    await supabase.from('categories').update({ active: !active }).eq('id', id);
-    fetchCategories();
+    try {
+      await fetch('/api/admin/categories', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, active: !active }),
+      });
+      fetchCategories();
+    } catch (err) { console.error(err); }
   };
 
   const startEdit = (cat: Category) => {

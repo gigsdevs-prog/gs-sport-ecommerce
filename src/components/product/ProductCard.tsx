@@ -46,7 +46,7 @@ const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCar
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
       <Link href={`/shop/${product.slug}`} className="group block">
-        <div className="relative aspect-[3/4] mb-4 bg-neutral-50 rounded-lg overflow-hidden">
+        <div className="relative aspect-[3/4] mb-3 sm:mb-4 bg-neutral-50 rounded-lg overflow-hidden">
           {product.images?.[0] ? (
             <Image
               src={product.images[0]}
@@ -118,13 +118,13 @@ const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCar
 
         {/* Info */}
         <div className="space-y-1">
-          <h3 className="text-sm font-medium text-neutral-800 group-hover:text-black transition-colors truncate">
+          <h3 className="text-xs sm:text-sm font-medium text-neutral-800 group-hover:text-black transition-colors truncate">
             {product.name}
           </h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">{formatPrice(product.price)}</span>
+            <span className="text-xs sm:text-sm font-semibold">{formatPrice(product.price)}</span>
             {product.compare_at_price && product.compare_at_price > product.price && (
-              <span className="text-sm text-neutral-400 line-through">
+              <span className="text-xs sm:text-sm text-neutral-400 line-through">
                 {formatPrice(product.compare_at_price)}
               </span>
             )}

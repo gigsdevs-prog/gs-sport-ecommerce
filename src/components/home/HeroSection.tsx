@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,25 +12,46 @@ import { useSiteContent } from '@/hooks/useSiteContent';
 import { createClient } from '@/lib/supabase/client';
 import type { Banner } from '@/types';
 
+const supabase = createClient();
+
 export default function HeroSection() {
   const { getText } = useSiteContent();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentBanner, setCurrentBanner] = useState(0);
-  const supabase = createClient();
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     const fetchBanners = async () => {
-      const { data } = await supabase
-        .from('banners')
-        .select('*')
-        .eq('active', true)
-        .order('order', { ascending: true });
-      if (data && data.length > 0) {
-        setBanners(data);
+      try {
+        const { data, error } = await supabase
+          .from('banners')
+          .select('*')
+          .eq('active', true)
+          .order('sort_order', { ascending: true });
+        if (error) console.error('Failed to fetch banners:', error);
+        if (mounted.current && data && data.length > 0) {
+          setBanners(data);
+        }
+      } catch (err) {
+        console.error('Banner fetch error:', err);
       }
     };
     fetchBanners();
-  }, [supabase]);
+
+    // Realtime: re-fetch banners when admin changes them
+    const channel = supabase
+      .channel('banners_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, () => {
+        if (mounted.current) fetchBanners();
+      })
+      .subscribe();
+
+    return () => {
+      mounted.current = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     if (banners.length <= 1) return;
@@ -41,10 +62,10 @@ export default function HeroSection() {
   }, [banners.length]);
 
   return (
-    <section className="relative h-[85vh] lg:h-[90vh] overflow-hidden bg-neutral-100">
+    <section className="relative h-[70vh] sm:h-[80vh] lg:h-[90vh] overflow-hidden bg-neutral-100">
       {/* Background Image */}
       <AnimatePresence mode="wait">
-        {banners.length > 0 ? (
+        {banners.length > 0 && banners[currentBanner] ? (
           <motion.div
             key={currentBanner}
             initial={{ opacity: 0, scale: 1.05 }}
@@ -53,14 +74,23 @@ export default function HeroSection() {
             transition={{ duration: 1.2 }}
             className="absolute inset-0"
           >
-            <Image
-              src={banners[currentBanner].image}
-              alt={banners[currentBanner].title}
-              fill
-              className="object-cover"
-              priority
-              sizes="100vw"
-            />
+            {banners[currentBanner].image_url?.endsWith('.gif') ? (
+              <img
+                src={banners[currentBanner].image_url}
+                alt={banners[currentBanner].title || 'Banner'}
+                className="absolute inset-0 w-full h-full object-contain bg-black"
+              />
+            ) : (
+              <Image
+                src={banners[currentBanner].image_url}
+                alt={banners[currentBanner].title || 'Banner'}
+                fill
+                className="object-contain"
+                priority
+                sizes="100vw"
+                quality={95}
+              />
+            )}
             <div className="absolute inset-0 bg-black/20" />
           </motion.div>
         ) : (
@@ -93,7 +123,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className={`text-4xl lg:text-6xl xl:text-7xl font-light tracking-tight leading-[1.1] ${
+              className={`text-3xl sm:text-4xl lg:text-6xl xl:text-7xl font-light tracking-tight leading-[1.1] ${
                 banners.length > 0 ? 'text-white' : 'text-neutral-900'
               }`}
             >
@@ -103,7 +133,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className={`mt-6 text-base lg:text-lg ${
+              className={`mt-4 sm:mt-6 text-sm sm:text-base lg:text-lg ${
                 banners.length > 0 ? 'text-white/80' : 'text-neutral-600'
               } max-w-md leading-relaxed`}
             >
@@ -113,11 +143,11 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1 }}
-              className="mt-8"
+              className="mt-6 sm:mt-8"
             >
               <Link
                 href="/shop"
-                className="inline-block bg-white text-black px-10 py-4 text-sm tracking-[0.2em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-500"
+                className="inline-block bg-white text-black px-6 sm:px-10 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-500"
               >
                 {getText('hero_cta')}
               </Link>

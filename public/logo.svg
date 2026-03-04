@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="currentColor">
+  <!-- G letter - rounded, open right with horizontal bar -->
+  <path d="M168 72c-65 0-118 53-118 118s53 118 118 118c12 0 24-2 35-5l27-58c-18 12-39 19-62 19-52 0-94-42-94-94s42-94 94-94c30 0 57 14 74 36l24-52C236 88 204 72 168 72zm62 100h-62v44h62v-44z"/>
+  <!-- S letter - rounded, positioned lower-right -->
+  <path d="M332 198c-52 0-94 42-94 94 0 30 14 57 36 74l24-52c-12-10-20-25-20-42 0-29 24-52 54-52 16 0 30 7 40 18l24-52c-17-16-40-26-64-26h0zm64 88c0 29-24 52-54 52-16 0-30-7-40-18l-24 52c17 16 40 26 64 26h0c52 0 94-42 94-94 0-30-14-57-36-74l-24 52c12 10 20 25 20 42v-38z"/>
+  <!-- Lightning bolt / diagonal slash -->
+  <path d="M355 18L230 228h50L155 482l125-210h-50z"/>
+</svg>

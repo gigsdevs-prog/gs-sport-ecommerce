@@ -4,20 +4,24 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Minus, Plus, ChevronLeft, ShoppingBag, Star, ZoomIn, X } from 'lucide-react';
+import { Heart, Minus, Plus, ChevronLeft, ShoppingBag, Star, ZoomIn, X, Play, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCartStore } from '@/store/cart';
 import { useWishlistStore } from '@/store/wishlist';
+import { useAuth } from '@/hooks/useAuth';
 import { formatPrice, getDiscountPercentage } from '@/utils';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import type { Product, Review } from '@/types';
+
+const supabase = createClient();
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -32,47 +36,79 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const mounted = useRef(true);
+
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return 0;
+    return reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+  }, [reviews]);
+
+  // Combine images and videos into a single media array
+  const mediaItems: { type: 'image' | 'video'; url: string }[] = [
+    ...(product?.images || []).map(url => ({ type: 'image' as const, url })),
+    ...(product?.videos || []).map(url => ({ type: 'video' as const, url })),
+  ];
 
   const { addItem } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
-  const supabase = createClient();
+  const { user, isAdmin } = useAuth();
 
   const fetchProduct = useCallback(async () => {
-    const { data } = await supabase
-      .from('products')
-      .select('*, category:categories(*)')
-      .eq('slug', slug)
-      .eq('active', true)
-      .single();
-    
-    if (data) {
-      setProduct(data);
-      if (data.sizes?.length) setSelectedSize(data.sizes[0]);
-      if (data.colors?.length) setSelectedColor(data.colors[0]);
-
-      // Fetch related products
-      const { data: related } = await supabase
+    try {
+      const { data, error } = await supabase
         .from('products')
-        .select('*')
-        .eq('category_id', data.category_id)
+        .select('*, category:categories(*)')
+        .eq('slug', slug)
         .eq('active', true)
-        .neq('id', data.id)
-        .limit(4);
-      if (related) setRelatedProducts(related);
+        .single();
+      
+      if (error) console.error('Failed to fetch product:', error);
 
-      // Fetch reviews
-      const { data: reviewData } = await supabase
-        .from('reviews')
-        .select('*, user:users(full_name, avatar_url)')
-        .eq('product_id', data.id)
-        .order('created_at', { ascending: false });
-      if (reviewData) setReviews(reviewData);
+      if (mounted.current && data) {
+        setProduct(data);
+        if (data.sizes?.length) setSelectedSize(data.sizes[0]);
+        if (data.colors?.length) setSelectedColor(data.colors[0]);
+
+        // Fetch related products
+        try {
+          const { data: related } = await supabase
+            .from('products')
+            .select('*')
+            .eq('category_id', data.category_id)
+            .eq('active', true)
+            .neq('id', data.id)
+            .limit(4);
+          if (mounted.current && related) setRelatedProducts(related);
+        } catch (relErr) {
+          console.error('Related products fetch error:', relErr);
+        }
+
+        // Fetch reviews
+        try {
+          const { data: reviewData } = await supabase
+            .from('reviews')
+            .select('*, user:users(full_name, avatar_url)')
+            .eq('product_id', data.id)
+            .order('created_at', { ascending: false });
+          if (mounted.current && reviewData) setReviews(reviewData);
+        } catch (revErr) {
+          console.error('Reviews fetch error:', revErr);
+        }
+      }
+    } catch (err) {
+      console.error('Product fetch error:', err);
+    } finally {
+      if (mounted.current) setLoading(false);
     }
-    setLoading(false);
-  }, [supabase, slug]);
+  }, [slug]);
 
   useEffect(() => {
+    mounted.current = true;
     fetchProduct();
+    return () => { mounted.current = false; };
   }, [fetchProduct]);
 
   const handleAddToCart = () => {
@@ -81,9 +117,65 @@ export default function ProductDetailPage() {
     }
   };
 
-  const averageRating = reviews.length > 0
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : 0;
+  const handleSubmitReview = async () => {
+    if (!user || !product) return;
+    if (!reviewComment.trim()) {
+      toast.error('Please write a comment');
+      return;
+    }
+    setReviewSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .upsert({
+          product_id: product.id,
+          user_id: user.id,
+          rating: reviewRating,
+          comment: reviewComment.trim(),
+        }, { onConflict: 'product_id,user_id' });
+
+      if (error) {
+        console.error('Review submit error:', error);
+        toast.error(error.message || 'Failed to submit review');
+      } else {
+        toast.success('Review submitted!');
+        setReviewComment('');
+        setReviewRating(5);
+        // Refresh reviews
+        const { data: reviewData } = await supabase
+          .from('reviews')
+          .select('*, user:users(full_name, avatar_url)')
+          .eq('product_id', product.id)
+          .order('created_at', { ascending: false });
+        if (mounted.current && reviewData) setReviews(reviewData);
+      }
+    } catch (err) {
+      console.error('Review error:', err);
+      toast.error('Failed to submit review');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Delete this review?')) return;
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId);
+
+      if (error) {
+        toast.error('Failed to delete review');
+      } else {
+        toast.success('Review deleted');
+        setReviews(prev => prev.filter(r => r.id !== reviewId));
+      }
+    } catch (err) {
+      console.error('Delete review error:', err);
+      toast.error('Failed to delete');
+    }
+  };
 
   if (loading) {
     return (
@@ -128,17 +220,24 @@ export default function ProductDetailPage() {
           Back to shop
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16">
           {/* Image Gallery */}
           <div className="space-y-4">
             <motion.div
               className="relative aspect-[3/4] bg-neutral-50 rounded-lg overflow-hidden cursor-zoom-in"
-              onClick={() => setZoomOpen(true)}
+              onClick={() => mediaItems[selectedImage]?.type === 'image' && setZoomOpen(true)}
               layoutId="product-image"
             >
-              {product.images?.[selectedImage] ? (
+              {mediaItems[selectedImage]?.type === 'video' ? (
+                <video
+                  src={mediaItems[selectedImage].url}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain bg-black"
+                />
+              ) : mediaItems[selectedImage]?.url ? (
                 <Image
-                  src={product.images[selectedImage]}
+                  src={mediaItems[selectedImage].url}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -150,9 +249,11 @@ export default function ProductDetailPage() {
                   <ShoppingBag size={64} />
                 </div>
               )}
-              <div className="absolute top-4 right-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center">
-                <ZoomIn size={18} className="text-neutral-600" />
-              </div>
+              {mediaItems[selectedImage]?.type === 'image' && (
+                <div className="absolute top-4 right-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center">
+                  <ZoomIn size={18} className="text-neutral-600" />
+                </div>
+              )}
               {discount > 0 && (
                 <span className="absolute top-4 left-4 bg-red-500 text-white text-xs tracking-wider uppercase px-3 py-1 rounded">
                   -{discount}%
@@ -161,9 +262,9 @@ export default function ProductDetailPage() {
             </motion.div>
 
             {/* Thumbnails */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-2">
-                {product.images.map((img, i) => (
+            {mediaItems.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {mediaItems.map((item, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
@@ -171,7 +272,16 @@ export default function ProductDetailPage() {
                       i === selectedImage ? 'border-black' : 'border-transparent'
                     }`}
                   >
-                    <Image src={img} alt="" fill className="object-cover" sizes="80px" />
+                    {item.type === 'video' ? (
+                      <>
+                        <video src={item.url} muted className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Play size={16} className="text-white" fill="white" />
+                        </div>
+                      </>
+                    ) : (
+                      <Image src={item.url} alt="" fill className="object-cover" sizes="80px" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -190,7 +300,7 @@ export default function ProductDetailPage() {
                   {product.category.name}
                 </p>
               )}
-              <h1 className="text-2xl lg:text-3xl font-light tracking-wide">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-light tracking-wide">
                 {product.name}
               </h1>
 
@@ -240,7 +350,7 @@ export default function ProductDetailPage() {
                         <button
                           key={size}
                           onClick={() => setSelectedSize(size)}
-                          className={`min-w-[48px] h-12 px-4 border text-sm transition-all duration-200 ${
+                          className={`min-w-[42px] sm:min-w-[48px] h-10 sm:h-12 px-3 sm:px-4 border text-sm transition-all duration-200 ${
                             selectedSize === size
                               ? 'border-black bg-black text-white'
                               : 'border-neutral-200 hover:border-black'
@@ -377,25 +487,104 @@ export default function ProductDetailPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="py-8"
               >
+                {/* Review Submission Form (logged-in users only) */}
+                {user ? (
+                  <div className="max-w-2xl mb-8 p-6 bg-neutral-50 rounded-lg">
+                    <h3 className="text-sm font-medium tracking-widest uppercase mb-4">Write a Review</h3>
+                    <div className="mb-4">
+                      <span className="text-xs text-neutral-500 block mb-2">Rating</span>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setReviewRating(i + 1)}
+                            className="p-0.5"
+                          >
+                            <Star
+                              size={20}
+                              className={i < reviewRating ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-200'}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <textarea
+                      value={reviewComment}
+                      onChange={e => setReviewComment(e.target.value)}
+                      placeholder="Share your thoughts about this product..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-neutral-200 rounded text-sm outline-none focus:border-black transition-colors resize-y bg-white"
+                    />
+                    <button
+                      onClick={handleSubmitReview}
+                      disabled={reviewSubmitting || !reviewComment.trim()}
+                      className="mt-3 px-6 py-2.5 bg-black text-white text-sm tracking-widest uppercase font-medium hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+                    >
+                      {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-w-2xl mb-8 p-4 bg-neutral-50 rounded-lg text-center">
+                    <p className="text-sm text-neutral-500">
+                      <Link href="/auth/login" className="text-black underline hover:no-underline">Sign in</Link>
+                      {' '}to leave a review.
+                    </p>
+                  </div>
+                )}
+
+                {/* Average Rating Summary */}
+                {reviews.length > 0 && (
+                  <div className="max-w-2xl mb-6 flex items-center gap-4">
+                    <div className="text-3xl font-light">{averageRating.toFixed(1)}</div>
+                    <div>
+                      <div className="flex items-center gap-0.5 mb-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={14}
+                            className={i < Math.round(averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-200'}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-neutral-500">
+                        Based on {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {reviews.length === 0 ? (
-                  <p className="text-sm text-neutral-500">No reviews yet.</p>
+                  <p className="text-sm text-neutral-500">No reviews yet. Be the first to review!</p>
                 ) : (
                   <div className="space-y-6 max-w-2xl">
                     {reviews.map(review => (
                       <div key={review.id} className="border-b border-neutral-100 pb-6">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex items-center gap-0.5">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={12}
-                                className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-200'}
-                              />
-                            ))}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-0.5">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={12}
+                                  className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-200'}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm font-medium">
+                              {review.user?.full_name || 'Anonymous'}
+                            </span>
                           </div>
-                          <span className="text-sm font-medium">
-                            {review.user?.full_name || 'Anonymous'}
-                          </span>
+                          {/* Admin can delete any review, users can delete own */}
+                          {(isAdmin || (user && user.id === review.user_id)) && (
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              className="p-1.5 text-neutral-300 hover:text-red-500 transition-colors"
+                              title="Delete review"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                         <p className="text-sm text-neutral-600">{review.comment}</p>
                       </div>
@@ -422,7 +611,7 @@ export default function ProductDetailPage() {
 
       {/* Image Zoom Modal */}
       <AnimatePresence>
-        {zoomOpen && product.images?.[selectedImage] && (
+        {zoomOpen && mediaItems[selectedImage]?.type === 'image' && mediaItems[selectedImage]?.url && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -437,7 +626,7 @@ export default function ProductDetailPage() {
               <X size={24} />
             </button>
             <Image
-              src={product.images[selectedImage]}
+              src={mediaItems[selectedImage].url}
               alt={product.name}
               width={1200}
               height={1600}

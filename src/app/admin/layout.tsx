@@ -19,6 +19,9 @@ import {
   X,
   ChevronLeft,
   Tags,
+  Info,
+  ImagePlus,
+  MessageCircle,
 } from 'lucide-react';
 import { SITE_NAME } from '@/lib/constants';
 
@@ -30,6 +33,9 @@ const sidebarLinks = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
   { href: '/admin/content', label: 'Content', icon: FileText },
+  { href: '/admin/about', label: 'About Page', icon: Info },
+  { href: '/admin/images', label: 'Site Images', icon: ImagePlus },
+  { href: '/admin/chat', label: 'Live Chat', icon: MessageCircle },
 ];
 
 export default function AdminLayout({

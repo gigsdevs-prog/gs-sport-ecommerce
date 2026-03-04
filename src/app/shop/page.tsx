@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
@@ -12,6 +12,8 @@ import { createClient } from '@/lib/supabase/client';
 import ProductCard from '@/components/product/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import type { Product, Category } from '@/types';
+
+const supabase = createClient();
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -22,70 +24,83 @@ function ShopContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const mounted = useRef(true);
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState(categorySlug || '');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [sortBy, setSortBy] = useState('newest');
 
-  const supabase = createClient();
-
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    let query = supabase
-      .from('products')
-      .select('*, category:categories(*)')
-      .eq('active', true);
+    try {
+      let query = supabase
+        .from('products')
+        .select('*, category:categories(*)')
+        .eq('active', true);
 
-    if (selectedCategory) {
-      const { data: cat } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('slug', selectedCategory)
-        .single();
-      if (cat) {
-        query = query.eq('category_id', cat.id);
+      if (selectedCategory) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('slug', selectedCategory)
+          .single();
+        if (cat) {
+          query = query.eq('category_id', cat.id);
+        }
       }
+
+      if (searchQuery) {
+        query = query.ilike('name', `%${searchQuery}%`);
+      }
+
+      query = query
+        .gte('price', priceRange[0])
+        .lte('price', priceRange[1]);
+
+      switch (sortBy) {
+        case 'price-asc':
+          query = query.order('price', { ascending: true });
+          break;
+        case 'price-desc':
+          query = query.order('price', { ascending: false });
+          break;
+        case 'name-asc':
+          query = query.order('name', { ascending: true });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
+      if (error) console.error('Failed to fetch products:', error);
+      if (mounted.current) setProducts(data || []);
+    } catch (err) {
+      console.error('Products fetch error:', err);
+      if (mounted.current) setProducts([]);
+    } finally {
+      if (mounted.current) setLoading(false);
     }
-
-    if (searchQuery) {
-      query = query.ilike('name', `%${searchQuery}%`);
-    }
-
-    query = query
-      .gte('price', priceRange[0])
-      .lte('price', priceRange[1]);
-
-    switch (sortBy) {
-      case 'price-asc':
-        query = query.order('price', { ascending: true });
-        break;
-      case 'price-desc':
-        query = query.order('price', { ascending: false });
-        break;
-      case 'name-asc':
-        query = query.order('name', { ascending: true });
-        break;
-      default:
-        query = query.order('created_at', { ascending: false });
-    }
-
-    const { data } = await query;
-    setProducts(data || []);
-    setLoading(false);
-  }, [supabase, selectedCategory, searchQuery, priceRange, sortBy]);
+  }, [selectedCategory, searchQuery, priceRange, sortBy]);
 
   useEffect(() => {
+    mounted.current = true;
     const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('active', true)
-        .order('name');
-      if (data) setCategories(data);
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('active', true)
+          .order('name');
+        if (error) console.error('Failed to fetch categories:', error);
+        if (mounted.current && data) setCategories(data);
+      } catch (err) {
+        console.error('Categories fetch error:', err);
+      }
     };
     fetchCategories();
-  }, [supabase]);
+    return () => { mounted.current = false; };
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -148,12 +163,15 @@ function ShopContent() {
       <div className="flex gap-8">
         {/* Filters sidebar */}
         {showFilters && (
-          <motion.aside
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: 240 }}
-            exit={{ opacity: 0, width: 0 }}
-            className="hidden lg:block flex-shrink-0 w-60"
-          >
+          <>
+            {/* Mobile overlay */}
+            <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setShowFilters(false)} />
+            <motion.aside
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-white shadow-xl p-6 pt-20 overflow-y-auto lg:relative lg:top-auto lg:left-auto lg:bottom-auto lg:z-auto lg:w-60 lg:shadow-none lg:p-0 lg:pt-0 lg:overflow-visible flex-shrink-0"
+            >
             <div className="sticky top-32 space-y-8">
               {/* Categories */}
               <div>
@@ -206,8 +224,17 @@ function ShopContent() {
                   Clear filters
                 </button>
               )}
+
+              {/* Close button mobile */}
+              <button
+                onClick={() => setShowFilters(false)}
+                className="lg:hidden w-full py-3 bg-black text-white text-sm rounded-lg mt-4"
+              >
+                Apply Filters
+              </button>
             </div>
           </motion.aside>
+          </>
         )}
 
         {/* Products grid */}

@@ -4,12 +4,14 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Package, ShoppingCart, Users, DollarSign, TrendingUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatPrice } from '@/utils';
 import { staggerContainer, fadeInUp } from '@/lib/animations';
+
+const supabase = createClient();
 
 interface DashboardStats {
   totalProducts: number;
@@ -33,29 +35,38 @@ export default function AdminDashboard() {
     recentOrders: [],
   });
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     const fetchStats = async () => {
-      const [products, orders, users] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }),
-        supabase.from('orders').select('id, total, status, created_at').order('created_at', { ascending: false }),
-        supabase.from('users').select('id', { count: 'exact', head: true }),
-      ]);
+      try {
+        const [products, orders, users] = await Promise.all([
+          supabase.from('products').select('id', { count: 'exact', head: true }),
+          supabase.from('orders').select('id, total, status, created_at').order('created_at', { ascending: false }),
+          supabase.from('users').select('id', { count: 'exact', head: true }),
+        ]);
 
-      const totalRevenue = orders.data?.reduce((sum, o) => sum + (o.total || 0), 0) || 0;
+        const totalRevenue = orders.data?.reduce((sum, o) => sum + (o.total || 0), 0) || 0;
 
-      setStats({
-        totalProducts: products.count || 0,
-        totalOrders: orders.data?.length || 0,
-        totalUsers: users.count || 0,
-        totalRevenue,
-        recentOrders: orders.data?.slice(0, 5) || [],
-      });
-      setLoading(false);
+        if (mounted.current) {
+          setStats({
+            totalProducts: products.count || 0,
+            totalOrders: orders.data?.length || 0,
+            totalUsers: users.count || 0,
+            totalRevenue,
+            recentOrders: orders.data?.slice(0, 5) || [],
+          });
+        }
+      } catch (err) {
+        console.error('Dashboard stats fetch error:', err);
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
     };
     fetchStats();
-  }, [supabase]);
+    return () => { mounted.current = false; };
+  }, []);
 
   const statCards = [
     { label: 'Total Revenue', value: formatPrice(stats.totalRevenue), icon: DollarSign, color: 'bg-green-50 text-green-600' },

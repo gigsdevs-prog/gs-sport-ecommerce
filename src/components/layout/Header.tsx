@@ -1,24 +1,39 @@
 // ============================================
 // GS SPORT - Header Component
+// Nav+Search left, Logo+SPORT center, icons right
+// Animated top bar with rotating announcements
 // ============================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingBag, Heart, User, Menu, X } from 'lucide-react';
+import { Search, ShoppingBag, User, Heart, Menu, X, Settings } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { useAuth } from '@/hooks/useAuth';
-import { NAV_LINKS, SITE_NAME } from '@/lib/constants';
+import { useSiteContent } from '@/hooks/useSiteContent';
+import { NAV_LINKS } from '@/lib/constants';
+
+const TOP_BAR_MESSAGES = [
+  'FREE SHIPPING ON ORDERS OVER $30',
+  'NEW ARRIVALS EVERY WEEK',
+  'PREMIUM ATHLETIC WEAR',
+  '30-DAY EASY RETURNS',
+  'SIGN UP & GET 10% OFF',
+];
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [topBarIndex, setTopBarIndex] = useState(0);
   const { openCart, getItemCount } = useCartStore();
   const { user, isAdmin } = useAuth();
+  const { getText } = useSiteContent();
+  const logoUrl = getText('site_logo_url') || '/logo.png';
   const itemCount = getItemCount();
 
   useEffect(() => {
@@ -27,14 +42,22 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Rotate top bar messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTopBarIndex(prev => (prev + 1) % TOP_BAR_MESSAGES.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.location.href = `/shop?search=${encodeURIComponent(searchQuery.trim())}`;
       setSearchOpen(false);
       setSearchQuery('');
     }
-  };
+  }, [searchQuery]);
 
   return (
     <>
@@ -45,90 +68,114 @@ export default function Header() {
             : 'bg-white'
         }`}
       >
-        {/* Top bar */}
-        <div className="border-b border-neutral-100">
+        {/* Top bar — animated rotating messages */}
+        <div className="border-b border-neutral-100 bg-neutral-950 text-white overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-10 text-xs tracking-widest text-neutral-500 uppercase">
-              <span>Free shipping on orders over $100</span>
-              <span className="hidden sm:block">Premium Athletic Wear</span>
+            <div className="flex items-center justify-center h-9 relative">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={topBarIndex}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  className="text-[10px] sm:text-xs tracking-[0.25em] uppercase font-light absolute"
+                >
+                  {TOP_BAR_MESSAGES[topBarIndex]}
+                </motion.span>
+              </AnimatePresence>
             </div>
           </div>
         </div>
 
         {/* Main header */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-neutral-700 hover:text-black transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu size={22} />
-            </button>
+          <div className="relative flex items-center justify-between h-16 lg:h-20">
+            {/* LEFT: Hamburger (mobile) + Nav Links (desktop) + Search */}
+            <div className="flex items-center gap-1 z-10">
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden p-2 text-neutral-700 hover:text-black transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu size={22} />
+              </button>
 
-            {/* Logo */}
-            <Link href="/" className="flex items-center">
-              <span className="text-xl lg:text-2xl font-bold tracking-[0.3em] text-black">
-                {SITE_NAME}
-              </span>
-            </Link>
+              {/* Desktop nav links */}
+              <nav className="hidden lg:flex items-center gap-1">
+                {NAV_LINKS.map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="px-2.5 py-1.5 text-[11px] tracking-[0.15em] uppercase text-neutral-600 hover:text-black transition-colors font-medium"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
 
-            {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-8">
-              {NAV_LINKS.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm tracking-widest uppercase text-neutral-600 hover:text-black transition-colors duration-300 relative group"
-                >
-                  {link.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-px bg-black transition-all duration-300 group-hover:w-full" />
-                </Link>
-              ))}
-            </nav>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
+              {/* Search */}
               <button
                 onClick={() => setSearchOpen(true)}
                 className="p-2 text-neutral-700 hover:text-black transition-colors"
                 aria-label="Search"
               >
-                <Search size={20} />
+                <Search size={19} />
               </button>
+            </div>
+
+            {/* CENTER: Logo + . SPORT (absolutely centered) */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <Link href="/" className="flex items-center gap-1">
+                <Image
+                  src={logoUrl}
+                  alt="GS SPORT"
+                  width={200}
+                  height={200}
+                  className="h-10 sm:h-11 lg:h-14 w-auto"
+                  priority
+                />
+                <span className="text-base sm:text-lg lg:text-xl font-semibold tracking-wider text-neutral-900">
+                  . SPORT
+                </span>
+              </Link>
+            </div>
+
+            {/* RIGHT: Wishlist + User + Admin + Cart */}
+            <div className="flex items-center gap-0.5 sm:gap-1 z-10">
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="hidden lg:flex items-center gap-1.5 bg-neutral-900 text-white px-3 py-1.5 text-[10px] tracking-widest uppercase font-medium hover:bg-neutral-700 transition-colors rounded"
+                >
+                  <Settings size={12} />
+                  Admin
+                </Link>
+              )}
 
               <Link
                 href="/wishlist"
-                className="p-2 text-neutral-700 hover:text-black transition-colors hidden sm:block"
+                className="hidden sm:block p-2 text-neutral-700 hover:text-black transition-colors"
                 aria-label="Wishlist"
               >
-                <Heart size={20} />
+                <Heart size={19} />
               </Link>
 
               <Link
                 href={user ? '/account' : '/auth/login'}
-                className="p-2 text-neutral-700 hover:text-black transition-colors hidden sm:block"
+                className="p-2 text-neutral-700 hover:text-black transition-colors"
                 aria-label="Account"
               >
-                <User size={20} />
+                <User size={19} />
               </Link>
-
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="text-xs tracking-widest uppercase text-neutral-500 hover:text-black transition-colors hidden lg:block"
-                >
-                  Admin
-                </Link>
-              )}
 
               <button
                 onClick={openCart}
                 className="p-2 text-neutral-700 hover:text-black transition-colors relative"
                 aria-label="Cart"
               >
-                <ShoppingBag size={20} />
+                <ShoppingBag size={19} />
                 {itemCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -178,7 +225,7 @@ export default function Header() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Menu */}
+      {/* Slide-out Menu from LEFT */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -186,60 +233,76 @@ export default function Header() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 z-[60] bg-black/20"
+              className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm"
             />
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'tween', duration: 0.3 }}
-              className="fixed top-0 left-0 bottom-0 z-[70] w-80 bg-white shadow-xl"
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed top-0 left-0 bottom-0 z-[70] w-80 bg-white shadow-2xl"
             >
               <div className="flex items-center justify-between p-6 border-b border-neutral-100">
-                <span className="text-lg font-bold tracking-[0.2em]">{SITE_NAME}</span>
+                <div className="flex items-center gap-1">
+                  <Image src={logoUrl} alt="GS SPORT" width={100} height={100} className="h-8 w-auto" />
+                  <span className="text-sm font-semibold tracking-wider">. SPORT</span>
+                </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 text-neutral-500 hover:text-black"
+                  className="p-2 text-neutral-500 hover:text-black transition-colors"
                 >
                   <X size={22} />
                 </button>
               </div>
-              <nav className="p-6 space-y-6">
-                {NAV_LINKS.map(link => (
-                  <Link
+              <nav className="p-6 space-y-1">
+                {NAV_LINKS.map((link, i) => (
+                  <motion.div
                     key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block text-sm tracking-widest uppercase text-neutral-600 hover:text-black transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
                   >
-                    {link.label}
-                  </Link>
+                    <Link
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
+                    >
+                      {link.label}
+                    </Link>
+                  </motion.div>
                 ))}
-                <hr className="border-neutral-100" />
-                <Link
-                  href={user ? '/account' : '/auth/login'}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block text-sm tracking-widest uppercase text-neutral-600 hover:text-black"
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="pt-4 space-y-1"
                 >
-                  {user ? 'Account' : 'Sign In'}
-                </Link>
-                <Link
-                  href="/wishlist"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block text-sm tracking-widest uppercase text-neutral-600 hover:text-black"
-                >
-                  Wishlist
-                </Link>
-                {isAdmin && (
                   <Link
-                    href="/admin"
+                    href={user ? '/account' : '/auth/login'}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block text-sm tracking-widest uppercase text-neutral-600 hover:text-black"
+                    className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
                   >
-                    Admin Panel
+                    {user ? 'My Account' : 'Sign In'}
                   </Link>
-                )}
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
+                  >
+                    Wishlist
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
+                </motion.div>
               </nav>
             </motion.div>
           </>
@@ -247,7 +310,7 @@ export default function Header() {
       </AnimatePresence>
 
       {/* Spacer */}
-      <div className="h-[104px] lg:h-[120px]" />
+      <div className="h-[100px] lg:h-[116px]" />
     </>
   );
 }

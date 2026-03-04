@@ -11,6 +11,8 @@ import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/utils';
 import toast from 'react-hot-toast';
 
+const supabase = createClient();
+
 interface UserRow {
   id: string;
   email: string;
@@ -26,41 +28,50 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const supabase = createClient();
-
   const fetchUsers = useCallback(async () => {
-    const { data } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data) setUsers(data);
-    setLoading(false);
-  }, [supabase]);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) console.error('Failed to fetch users:', error);
+      if (data) setUsers(data);
+    } catch (err) {
+      console.error('Users fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const toggleBlock = async (userId: string, blocked: boolean) => {
-    const { error } = await supabase
-      .from('users')
-      .update({ blocked: !blocked })
-      .eq('id', userId);
-
-    if (error) { toast.error('Failed to update user'); return; }
-    toast.success(blocked ? 'User unblocked' : 'User blocked');
-    fetchUsers();
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, blocked: !blocked }),
+      });
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to update user'); return; }
+      toast.success(blocked ? 'User unblocked' : 'User blocked');
+      fetchUsers();
+    } catch (err) { console.error(err); toast.error('Network error'); }
   };
 
   const toggleAdmin = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    const { error } = await supabase
-      .from('users')
-      .update({ role: newRole })
-      .eq('id', userId);
-
-    if (error) { toast.error('Failed to update role'); return; }
-    toast.success(`Role updated to ${newRole}`);
-    fetchUsers();
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, role: newRole }),
+      });
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to update role'); return; }
+      toast.success(`Role updated to ${newRole}`);
+      fetchUsers();
+    } catch (err) { console.error(err); toast.error('Network error'); }
   };
 
   const filtered = users.filter(u =>

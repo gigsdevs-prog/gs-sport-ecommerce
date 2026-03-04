@@ -15,26 +15,32 @@ import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import type { Product } from '@/types';
 
+const supabase = createClient();
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const supabase = createClient();
-
   const fetchProducts = useCallback(async () => {
-    let query = supabase
-      .from('products')
-      .select('*, category:categories(name)')
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('products')
+        .select('*, category:categories(name)')
+        .order('created_at', { ascending: false });
 
-    if (search) {
-      query = query.ilike('name', `%${search}%`);
+      if (search) {
+        query = query.ilike('name', `%${search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) console.error('Failed to fetch products:', error);
+      if (data) setProducts(data);
+    } catch (err) {
+      console.error('Products fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data } = await query;
-    if (data) setProducts(data);
-    setLoading(false);
-  }, [supabase, search]);
+  }, [search]);
 
   useEffect(() => {
     fetchProducts();
@@ -42,12 +48,22 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) {
-      toast.error('Failed to delete product');
-    } else {
-      toast.success('Product deleted');
-      setProducts(prev => prev.filter(p => p.id !== id));
+    try {
+      const response = await fetch('/api/admin/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error || 'Failed to delete product');
+      } else {
+        toast.success('Product deleted');
+        setProducts(prev => prev.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error');
     }
   };
 

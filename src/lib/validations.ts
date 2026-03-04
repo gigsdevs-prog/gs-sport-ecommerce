@@ -75,6 +75,14 @@ export const reviewSchema = z.object({
   comment: z.string().min(1, 'Review comment is required'),
 });
 
+export const resetPasswordSchema = z.object({
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirm_password: z.string(),
+}).refine(data => data.password === data.confirm_password, {
+  message: 'Passwords do not match',
+  path: ['confirm_password'],
+});
+
 export const newsletterSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
@@ -88,4 +96,5 @@ export type CategoryFormData = z.infer<typeof categorySchema>;
 export type BannerFormData = z.infer<typeof bannerSchema>;
 export type SiteContentFormData = z.infer<typeof siteContentSchema>;
 export type ReviewFormData = z.infer<typeof reviewSchema>;
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export type NewsletterFormData = z.infer<typeof newsletterSchema>;

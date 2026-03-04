@@ -5,25 +5,39 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 
 export default function PromoBanner() {
   const { getText } = useSiteContent();
+  const promoImage = getText('promo_image_url');
 
   return (
     <section className="py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ScrollReveal>
           <div className="relative overflow-hidden rounded-lg bg-neutral-900 py-20 lg:py-28 px-8 lg:px-16 text-center">
-            {/* Subtle pattern overlay */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute inset-0" style={{
-                backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-                backgroundSize: '40px 40px'
-              }} />
-            </div>
+            {/* Background image (admin-uploadable) or subtle pattern overlay */}
+            {promoImage ? (
+              <div className="absolute inset-0">
+                <Image
+                  src={promoImage}
+                  alt=""
+                  fill
+                  className="object-cover opacity-30"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0" style={{
+                  backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+                  backgroundSize: '40px 40px'
+                }} />
+              </div>
+            )}
 
             <div className="relative z-10 max-w-2xl mx-auto">
               <motion.p

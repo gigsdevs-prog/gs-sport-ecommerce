@@ -12,6 +12,7 @@ export interface Product {
   category_id: string;
   category?: Category;
   images: string[];
+  videos: string[];
   sizes: string[];
   colors: string[];
   stock: number;
@@ -93,10 +94,10 @@ export interface Banner {
   id: string;
   title: string;
   subtitle: string | null;
-  image: string;
+  image_url: string;
   link: string | null;
   active: boolean;
-  order: number;
+  sort_order: number;
   created_at: string;
 }
 
@@ -125,4 +126,16 @@ export interface WishlistItem {
   product_id: string;
   product?: Product;
   created_at: string;
+}
+
+export interface AboutPage {
+  id: string;
+  image_url: string | null;
+  title: string;
+  description: string;
+  phone: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  tiktok_url: string | null;
+  updated_at: string;
 }

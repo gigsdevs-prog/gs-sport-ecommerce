@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
@@ -15,32 +15,44 @@ import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import Button from '@/components/ui/Button';
 import type { Product } from '@/types';
 
+const supabase = createClient();
+
 export default function WishlistPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { items } = useWishlistStore();
-  const supabase = createClient();
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     const fetchProducts = async () => {
-      if (items.length === 0) {
-        setProducts([]);
-        setLoading(false);
-        return;
+      try {
+        if (items.length === 0) {
+          if (mounted.current) {
+            setProducts([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', items)
+          .eq('active', true);
+
+        if (error) console.error('Failed to fetch wishlist products:', error);
+        if (mounted.current && data) setProducts(data);
+      } catch (err) {
+        console.error('Wishlist fetch error:', err);
+      } finally {
+        if (mounted.current) setLoading(false);
       }
-
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .in('id', items)
-        .eq('active', true);
-
-      if (data) setProducts(data);
-      setLoading(false);
     };
 
     fetchProducts();
-  }, [items, supabase]);
+    return () => { mounted.current = false; };
+  }, [items]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">

@@ -4,35 +4,56 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import SectionHeading from '@/components/ui/SectionHeading';
-import ProductCard from '@/components/product/ProductCard';
+import ProductSlider from '@/components/product/ProductSlider';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import type { Product } from '@/types';
+
+const supabase = createClient();
 
 export default function BestSellers() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { getText } = useSiteContent();
-  const supabase = createClient();
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     const fetchProducts = async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .eq('best_seller', true)
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(4);
-      
-      if (data) setProducts(data);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('best_seller', true)
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(4);
+        if (error) console.error('Failed to fetch best sellers:', error);
+        if (mounted.current && data) setProducts(data);
+      } catch (err) {
+        console.error('Best sellers fetch error:', err);
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
     };
     fetchProducts();
-  }, [supabase]);
+
+    // Realtime: re-fetch when admin changes products
+    const channel = supabase
+      .channel('bestsellers_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        if (mounted.current) fetchProducts();
+      })
+      .subscribe();
+
+    return () => {
+      mounted.current = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   if (!loading && products.length === 0) return null;
 
@@ -47,11 +68,7 @@ export default function BestSellers() {
         {loading ? (
           <ProductGridSkeleton count={4} />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {products.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
-            ))}
-          </div>
+          <ProductSlider products={products} />
         )}
       </div>
     </section>

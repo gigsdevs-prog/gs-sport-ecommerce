@@ -20,6 +20,15 @@ export const DEFAULT_CONTENT: Record<string, string> = {
   'promo_subtitle': 'Up to 40% off on selected items',
   'promo_cta': 'Shop Sale',
   'footer_about': 'GS SPORT is a premium athletic brand dedicated to empowering athletes with high-quality, stylish performance wear.',
+  'top_bar_text': 'Free shipping on orders over $100',
+  'top_bar_right': 'Premium Athletic Wear',
+  'categories_title': 'Shop by Category',
+  'categories_subtitle': 'Find your perfect fit',
+  'product_details_title': 'Product Details',
+  'add_to_cart_text': 'Add to Cart',
+  'footer_copyright': 'All rights reserved.',
+  'site_logo_url': '/logo.png',
+  'promo_image_url': '',
 };
 
 export const ORDER_STATUSES = [
@@ -40,4 +49,5 @@ export const NAV_LINKS = [
   { href: '/shop?category=women', label: 'Women' },
   { href: '/shop?category=accessories', label: 'Accessories' },
   { href: '/shop?category=shoes', label: 'Shoes' },
+  { href: '/about', label: 'About' },
 ] as const;

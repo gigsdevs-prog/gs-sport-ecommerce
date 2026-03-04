@@ -13,39 +13,52 @@ import { ORDER_STATUSES } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import type { Order, OrderStatus } from '@/types';
 
+const supabase = createClient();
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const supabase = createClient();
-
   const fetchOrders = useCallback(async () => {
-    let query = supabase
-      .from('orders')
-      .select('*, items:order_items(*, product:products(name, images)), user:users(email, full_name)')
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('orders')
+        .select('*, items:order_items(*, product:products(name, images)), user:users(email, full_name)')
+        .order('created_at', { ascending: false });
 
-    if (statusFilter) {
-      query = query.eq('status', statusFilter);
+      if (statusFilter) {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) console.error('Failed to fetch orders:', error);
+      if (data) setOrders(data);
+    } catch (err) {
+      console.error('Orders fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data } = await query;
-    if (data) setOrders(data);
-    setLoading(false);
-  }, [supabase, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   const updateStatus = async (orderId: string, status: OrderStatus) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', orderId);
+    try {
+      const response = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orderId, status }),
+      });
 
-    if (error) { toast.error('Failed to update'); return; }
-    toast.success('Status updated');
-    fetchOrders();
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to update'); return; }
+      toast.success('Status updated');
+      fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error');
+    }
   };
 
   const getStatusBadge = (status: string) => {

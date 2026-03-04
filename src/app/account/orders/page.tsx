@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Package, ChevronLeft } from 'lucide-react';
@@ -14,26 +14,36 @@ import { formatPrice, formatDate } from '@/utils';
 import { ORDER_STATUSES } from '@/lib/constants';
 import type { Order } from '@/types';
 
+const supabase = createClient();
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const supabase = createClient();
+  const mounted = useRef(true);
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('orders')
-      .select('*, items:order_items(*, product:products(*))')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    if (data) setOrders(data);
-    setLoading(false);
-  }, [user, supabase]);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, items:order_items(*, product:products(*))')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) console.error('Failed to fetch orders:', error);
+      if (mounted.current && data) setOrders(data);
+    } catch (err) {
+      console.error('Orders fetch error:', err);
+    } finally {
+      if (mounted.current) setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
+    mounted.current = true;
     fetchOrders();
+    return () => { mounted.current = false; };
   }, [fetchOrders]);
 
   const getStatusBadge = (status: string) => {

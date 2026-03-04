@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronLeft, Upload, X } from 'lucide-react';
+import { ChevronLeft, Upload, X, Video } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -18,14 +18,17 @@ import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import type { Category } from '@/types';
 
+const supabase = createClient();
+
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
-  const supabase = createClient();
   const [categories, setCategories] = useState<Category[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sizesInput, setSizesInput] = useState('');
@@ -63,11 +66,12 @@ export default function EditProductPage() {
       setValue('best_seller', data.best_seller);
       setValue('active', data.active);
       setImages(data.images || []);
+      setVideos(data.videos || []);
       setSizesInput((data.sizes || []).join(', '));
       setColorsInput((data.colors || []).join(', '));
     }
     setLoading(false);
-  }, [supabase, productId, setValue]);
+  }, [productId, setValue]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -76,7 +80,7 @@ export default function EditProductPage() {
     };
     fetchCategories();
     fetchProduct();
-  }, [supabase, fetchProduct]);
+  }, [fetchProduct]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -99,22 +103,63 @@ export default function EditProductPage() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setVideoUploading(true);
+    const newVideos = [...videos];
+    for (const file of Array.from(e.target.files)) {
+      const ext = file.name.split('.').pop();
+      const fileName = `vid-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+      const { error } = await supabase.storage.from('products').upload(fileName, file);
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(fileName);
+        newVideos.push(publicUrl);
+      } else {
+        toast.error('Video upload failed');
+      }
+    }
+    setVideos(newVideos);
+    setVideoUploading(false);
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const onSubmit = async (data: ProductFormData) => {
     setSaving(true);
     const sizes = sizesInput.split(',').map(s => s.trim()).filter(Boolean);
     const colors = colorsInput.split(',').map(s => s.trim()).filter(Boolean);
 
-    const { error } = await supabase.from('products')
-      .update({ ...data, images, sizes, colors, updated_at: new Date().toISOString() })
-      .eq('id', productId);
+    try {
+      const response = await fetch('/api/admin/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: productId,
+          ...data,
+          images,
+          videos,
+          sizes,
+          colors,
+          updated_at: new Date().toISOString(),
+        }),
+      });
 
-    if (error) {
-      toast.error('Failed to update product');
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error || 'Failed to update product');
+        setSaving(false);
+        return;
+      }
+
+      toast.success('Product updated!');
+      router.push('/admin/products');
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error');
       setSaving(false);
-      return;
     }
-    toast.success('Product updated!');
-    router.push('/admin/products');
   };
 
   if (loading) {
@@ -158,7 +203,37 @@ export default function EditProductPage() {
               <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
             </label>
           </div>
-          {uploading && <p className="text-xs text-neutral-500 mt-2">Uploading...</p>}
+          {uploading && <p className="text-xs text-neutral-500 mt-2">Uploading images...</p>}
+        </div>
+
+        {/* Videos */}
+        <div>
+          <label className="block text-xs tracking-widest uppercase text-neutral-500 mb-3 font-medium">
+            Product Videos
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {videos.map((vid, i) => (
+              <div key={i} className="relative w-40 h-28 bg-neutral-900 rounded overflow-hidden group">
+                <video src={vid} className="w-full h-full object-cover" muted />
+                <button
+                  type="button"
+                  onClick={() => removeVideo(i)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={12} />
+                </button>
+                <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded">
+                  Video {i + 1}
+                </div>
+              </div>
+            ))}
+            <label className="w-40 h-28 border-2 border-dashed border-neutral-200 rounded flex flex-col items-center justify-center cursor-pointer hover:border-black transition-colors">
+              <Video size={20} className="text-neutral-400 mb-1" />
+              <span className="text-xs text-neutral-400">Add Video</span>
+              <input type="file" accept="video/*" multiple onChange={handleVideoUpload} className="hidden" />
+            </label>
+          </div>
+          {videoUploading && <p className="text-xs text-neutral-500 mt-2">Uploading video...</p>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

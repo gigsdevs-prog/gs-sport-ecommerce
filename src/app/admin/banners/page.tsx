@@ -10,7 +10,8 @@ import { Image as ImageIcon, Plus, Trash2, Eye, EyeOff, Upload, X } from 'lucide
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/utils';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
+
+const supabase = createClient();
 
 interface Banner {
   id: string;
@@ -35,17 +36,20 @@ export default function AdminBannersPage() {
   const [link, setLink] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  const supabase = createClient();
-
   const fetchBanners = useCallback(async () => {
-    const { data } = await supabase
-      .from('banners')
-      .select('*')
-      .order('sort_order', { ascending: true });
-
-    if (data) setBanners(data);
-    setLoading(false);
-  }, [supabase]);
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (error) console.error('Failed to fetch banners:', error);
+      if (data) setBanners(data);
+    } catch (err) {
+      console.error('Banners fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => { fetchBanners(); }, [fetchBanners]);
 
@@ -54,9 +58,14 @@ export default function AdminBannersPage() {
     const ext = file.name.split('.').pop();
     const name = `banner-${Date.now()}.${ext}`;
 
+    // Upload without compression — preserve original quality
     const { error } = await supabase.storage
       .from('banners')
-      .upload(name, file, { cacheControl: '3600', upsert: false });
+      .upload(name, file, {
+        cacheControl: '31536000',
+        upsert: false,
+        contentType: file.type, // preserve original MIME type
+      });
 
     if (error) { toast.error('Upload failed'); setUploading(false); return; }
 
@@ -68,33 +77,64 @@ export default function AdminBannersPage() {
   const createBanner = async () => {
     if (!title || !imageUrl) { toast.error('Title and image are required'); return; }
 
-    const { error } = await supabase.from('banners').insert({
-      title,
-      subtitle: subtitle || null,
-      image_url: imageUrl,
-      link: link || null,
-      active: true,
-      sort_order: banners.length,
-    });
+    try {
+      const response = await fetch('/api/admin/banners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          subtitle: subtitle || null,
+          image_url: imageUrl,
+          link: link || null,
+          active: true,
+          sort_order: banners.length,
+        }),
+      });
 
-    if (error) { toast.error('Failed to create banner'); return; }
-    toast.success('Banner created');
-    setTitle(''); setSubtitle(''); setLink(''); setImageUrl('');
-    setShowForm(false);
-    fetchBanners();
+      const result = await response.json();
+      if (!response.ok) { toast.error(result.error || 'Failed to create banner'); return; }
+
+      toast.success('Banner created');
+      setTitle(''); setSubtitle(''); setLink(''); setImageUrl('');
+      setShowForm(false);
+      fetchBanners();
+    } catch (err) {
+      console.error('Create banner error:', err);
+      toast.error('Network error — please try again');
+    }
   };
 
   const toggleActive = async (id: string, active: boolean) => {
-    await supabase.from('banners').update({ active: !active }).eq('id', id);
-    toast.success(active ? 'Banner hidden' : 'Banner visible');
-    fetchBanners();
+    try {
+      const response = await fetch('/api/admin/banners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, active: !active }),
+      });
+      if (!response.ok) { toast.error('Failed to update'); return; }
+      toast.success(active ? 'Banner hidden' : 'Banner visible');
+      fetchBanners();
+    } catch (err) {
+      console.error('Toggle banner error:', err);
+      toast.error('Network error');
+    }
   };
 
   const deleteBanner = async (id: string) => {
     if (!confirm('Delete this banner?')) return;
-    await supabase.from('banners').delete().eq('id', id);
-    toast.success('Banner deleted');
-    fetchBanners();
+    try {
+      const response = await fetch('/api/admin/banners', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (!response.ok) { toast.error('Failed to delete'); return; }
+      toast.success('Banner deleted');
+      fetchBanners();
+    } catch (err) {
+      console.error('Delete banner error:', err);
+      toast.error('Network error');
+    }
   };
 
   return (
@@ -102,7 +142,7 @@ export default function AdminBannersPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-light tracking-wide">Banners</h1>
-          <p className="text-sm text-neutral-500 mt-1">Manage homepage hero banners</p>
+          <p className="text-sm text-neutral-500 mt-1">Manage homepage hero banners (supports images & GIFs)</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -150,20 +190,20 @@ export default function AdminBannersPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block">Image *</label>
+              <label className="text-xs text-neutral-500 mb-1 block">Image / GIF *</label>
               {imageUrl ? (
-                <div className="relative w-full h-24 bg-neutral-50 rounded overflow-hidden">
-                  <Image src={imageUrl} alt="" fill className="object-cover" />
+                <div className="relative w-full h-32 bg-neutral-50 rounded overflow-hidden">
+                  <img src={imageUrl} alt="" className="w-full h-full object-contain" />
                   <button onClick={() => setImageUrl('')} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full">
                     <X size={14} />
                   </button>
                 </div>
               ) : (
                 <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-neutral-200 rounded cursor-pointer hover:border-black transition-colors text-sm text-neutral-400">
-                  {uploading ? 'Uploading...' : <><Upload size={16} /> Upload Image</>}
+                  {uploading ? 'Uploading...' : <><Upload size={16} /> Upload Image / GIF</>}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.gif"
                     className="hidden"
                     onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])}
                   />
@@ -203,11 +243,10 @@ export default function AdminBannersPage() {
             >
               {/* Thumbnail */}
               <div className="relative w-32 h-20 bg-neutral-100 rounded-lg overflow-hidden shrink-0">
-                <Image
+                <img
                   src={banner.image_url}
                   alt={banner.title}
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
 
