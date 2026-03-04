@@ -44,6 +44,7 @@ export interface Order {
   id: string;
   user_id: string;
   status: OrderStatus;
+  payment_method: 'cash' | 'card';
   total: number;
   subtotal: number;
   shipping: number;

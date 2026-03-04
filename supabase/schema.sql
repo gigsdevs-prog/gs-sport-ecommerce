@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('awaiting_payment', 'pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+  payment_method TEXT NOT NULL DEFAULT 'cash' CHECK (payment_method IN ('cash', 'card')),
   total NUMERIC(10, 2) NOT NULL DEFAULT 0,
   subtotal NUMERIC(10, 2) NOT NULL DEFAULT 0,
   shipping NUMERIC(10, 2) NOT NULL DEFAULT 0,

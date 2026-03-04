@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Lock } from 'lucide-react';
+import { ShoppingBag, Lock, Banknote, CreditCard, Check } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { shippingSchema, type ShippingFormData } from '@/lib/validations';
 import { formatPrice } from '@/utils';
@@ -18,10 +18,13 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
+type PaymentMethod = 'cash' | 'card';
+
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotal } = useCartStore();
+  const { items, getTotal, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
 
   const subtotal = getTotal();
   const shipping = subtotal >= 100 ? 0 : 9.99;
@@ -44,6 +47,7 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          payment_method: paymentMethod,
           items: items.map(item => ({
             product_id: item.product.id,
             name: item.product.name,
@@ -64,9 +68,14 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (data.url) {
+        // Card payment — redirect to BOG iPay
         window.location.href = data.url;
+      } else if (data.success) {
+        // Cash on delivery — order placed directly
+        clearCart();
+        router.push(`/checkout/success?order_id=${data.order_id}`);
       } else {
-        throw new Error(data.error || 'Failed to create checkout session');
+        throw new Error(data.error || 'Failed to place order');
       }
     } catch {
       toast.error('Something went wrong. Please try again.');
@@ -153,11 +162,61 @@ export default function CheckoutPage() {
             <Input
               label="Phone"
               type="tel"
-              placeholder="+1 (555) 123-4567"
+              placeholder="+995 5XX XXX XXX"
               error={errors.phone?.message}
               {...register('phone')}
             />
           </form>
+
+          {/* Payment Method */}
+          <div className="mt-8">
+            <h2 className="text-xs tracking-[0.2em] uppercase font-semibold mb-4">
+              Payment Method
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 ${
+                  paymentMethod === 'cash'
+                    ? 'border-black bg-neutral-50'
+                    : 'border-neutral-200 hover:border-neutral-400'
+                }`}
+              >
+                {paymentMethod === 'cash' && (
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                    <Check size={12} className="text-white" />
+                  </div>
+                )}
+                <Banknote size={28} className={paymentMethod === 'cash' ? 'text-black' : 'text-neutral-400'} />
+                <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-black' : 'text-neutral-500'}`}>
+                  Cash on Delivery
+                </span>
+                <span className="text-xs text-neutral-400">Pay when you receive</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('card')}
+                className={`relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 ${
+                  paymentMethod === 'card'
+                    ? 'border-black bg-neutral-50'
+                    : 'border-neutral-200 hover:border-neutral-400'
+                }`}
+              >
+                {paymentMethod === 'card' && (
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                    <Check size={12} className="text-white" />
+                  </div>
+                )}
+                <CreditCard size={28} className={paymentMethod === 'card' ? 'text-black' : 'text-neutral-400'} />
+                <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-black' : 'text-neutral-500'}`}>
+                  Pay by Card
+                </span>
+                <span className="text-xs text-neutral-400">Visa / Mastercard</span>
+              </button>
+            </div>
+          </div>
         </motion.div>
 
         {/* Order Summary */}
@@ -232,13 +291,31 @@ export default function CheckoutPage() {
               loading={loading}
               className="mt-6"
             >
-              <Lock size={16} />
-              Pay {formatPrice(total)}
+              {paymentMethod === 'card' ? (
+                <>
+                  <CreditCard size={16} />
+                  Pay {formatPrice(total)}
+                </>
+              ) : (
+                <>
+                  <Banknote size={16} />
+                  Place Order — {formatPrice(total)}
+                </>
+              )}
             </Button>
 
             <p className="mt-4 text-xs text-neutral-400 text-center flex items-center justify-center gap-1">
-              <Lock size={12} />
-              Secure payment via Bank of Georgia
+              {paymentMethod === 'card' ? (
+                <>
+                  <Lock size={12} />
+                  Secure payment via Bank of Georgia
+                </>
+              ) : (
+                <>
+                  <Banknote size={12} />
+                  Pay with cash when your order arrives
+                </>
+              )}
             </p>
           </div>
         </motion.div>

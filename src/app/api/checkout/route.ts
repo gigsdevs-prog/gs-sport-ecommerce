@@ -1,5 +1,5 @@
 // ============================================
-// GS SPORT - Checkout API Route (BOG iPay)
+// GS SPORT - Checkout API Route (Cash + Card)
 // ============================================
 
 import { NextResponse } from 'next/server';
@@ -12,20 +12,22 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
 
     const body = await request.json();
-    const { items, shipping_address, subtotal, shipping, tax, total } = body;
+    const { payment_method, items, shipping_address, subtotal, shipping, tax, total } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
     }
 
     const adminClient = createAdminSupabaseClient();
+    const isCash = payment_method === 'cash';
 
-    // Create order in DB first (status: awaiting_payment)
+    // Create order in DB
     const { data: order, error: orderError } = await adminClient
       .from('orders')
       .insert({
         user_id: user?.id || null,
-        status: 'awaiting_payment',
+        status: isCash ? 'pending' : 'awaiting_payment',
+        payment_method: isCash ? 'cash' : 'card',
         total,
         subtotal,
         shipping,
@@ -51,7 +53,20 @@ export async function POST(request: Request) {
     }));
     await adminClient.from('order_items').insert(orderItems);
 
-    // Create BOG iPay payment
+    // Update stock for all orders
+    for (const item of items) {
+      await adminClient.rpc('decrease_stock', {
+        p_id: item.product_id,
+        amount: item.quantity,
+      });
+    }
+
+    // Cash on delivery — order is placed immediately
+    if (isCash) {
+      return NextResponse.json({ success: true, order_id: order.id });
+    }
+
+    // Card payment — redirect to BOG iPay
     const payment = await createPaymentOrder({
       shopOrderId: order.id,
       amount: total,
@@ -64,7 +79,6 @@ export async function POST(request: Request) {
       })),
     });
 
-    // Store BOG payment order ID on the order
     await adminClient
       .from('orders')
       .update({ bog_order_id: payment.orderId })

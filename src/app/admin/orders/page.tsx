@@ -130,6 +130,15 @@ export default function AdminOrdersPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   {getStatusBadge(order.status)}
+                  {order.payment_method && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      order.payment_method === 'card' 
+                        ? 'bg-blue-50 text-blue-700' 
+                        : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {order.payment_method === 'card' ? 'Card' : 'Cash'}
+                    </span>
+                  )}
                   <span className="text-sm font-semibold">{formatPrice(order.total)}</span>
                   <ChevronDown size={16} className={`text-neutral-400 transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`} />
                 </div>
