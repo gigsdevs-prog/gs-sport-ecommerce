@@ -64,8 +64,8 @@ export async function POST(request: Request) {
       if (orderItems) {
         for (const item of orderItems) {
           await supabase.rpc('decrease_stock', {
-            p_id: item.product_id,
-            amount: item.quantity,
+            p_product_id: item.product_id,
+            p_quantity: item.quantity,
           });
         }
       }
