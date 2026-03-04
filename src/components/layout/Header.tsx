@@ -125,9 +125,9 @@ export default function Header() {
               </button>
             </div>
 
-            {/* CENTER: Logo + . SPORT (absolutely centered) */}
+            {/* CENTER: Logo (absolutely centered) */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <Link href="/" className="flex items-center gap-1">
+              <Link href="/" className="flex items-center">
                 <Image
                   src={logoUrl}
                   alt="GS SPORT"
@@ -136,9 +136,6 @@ export default function Header() {
                   className="h-10 sm:h-11 lg:h-14 w-auto"
                   priority
                 />
-                <span className="text-base sm:text-lg lg:text-xl font-semibold tracking-wider text-neutral-900">
-                  . SPORT
-                </span>
               </Link>
             </div>
 
@@ -245,9 +242,8 @@ export default function Header() {
               className="fixed top-0 left-0 bottom-0 z-[70] w-80 bg-white shadow-2xl"
             >
               <div className="flex items-center justify-between p-6 border-b border-neutral-100">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center">
                   <Image src={logoUrl} alt="GS SPORT" width={100} height={100} className="h-8 w-auto" />
-                  <span className="text-sm font-semibold tracking-wider">. SPORT</span>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
