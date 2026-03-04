@@ -89,7 +89,7 @@ export default function Header() {
         </div>
 
         {/* Main header */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="relative flex items-center justify-between h-16 lg:h-20">
             {/* LEFT: Hamburger (mobile) + Nav Links (desktop) + Search */}
             <div className="flex items-center gap-1 z-10">
