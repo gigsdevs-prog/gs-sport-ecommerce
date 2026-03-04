@@ -5,24 +5,10 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/admin';
 
 const BUCKET = 'site-images';
-
-async function verifyAdmin() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || profile.role !== 'admin') return null;
-  return user;
-}
 
 export async function POST(request: Request) {
   try {

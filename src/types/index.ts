@@ -141,3 +141,15 @@ export interface AboutPage {
   tiktok_url: string | null;
   updated_at: string;
 }
+
+export interface GifSection {
+  id: string;
+  title: string | null;
+  gif_url: string;
+  category_id: string | null;
+  product_id: string | null;
+  active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}

@@ -22,15 +22,60 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (authUser: User) => {
     try {
-      const { data, error } = await supabase
+      // 1. Try by Supabase Auth UUID
+      const { data } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('id', authUser.id)
         .single();
-      if (error) console.error('Profile fetch error:', error);
-      if (mounted.current) setProfile(data);
+
+      if (data) {
+        if (mounted.current) setProfile(data);
+        return;
+      }
+
+      // 2. Try by email (handles CUID → UUID migration)
+      const email = authUser.email;
+      if (email) {
+        const { data: byEmail } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .single();
+
+        if (byEmail) {
+          // Update the row's ID to the Supabase Auth UUID
+          await supabase
+            .from('users')
+            .update({ id: authUser.id })
+            .eq('email', email);
+          // Also update orders referencing the old ID
+          await supabase
+            .from('orders')
+            .update({ user_id: authUser.id })
+            .eq('user_id', byEmail.id);
+          if (mounted.current) setProfile({ ...byEmail, id: authUser.id });
+          return;
+        }
+      }
+
+      // 3. User doesn't exist — create profile
+      const newProfile = {
+        id: authUser.id,
+        email: authUser.email || '',
+        full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '',
+        role: 'user',
+        avatar_url: authUser.user_metadata?.avatar_url || null,
+        blocked: false,
+      };
+      const { data: created } = await supabase
+        .from('users')
+        .insert(newProfile)
+        .select()
+        .single();
+      if (mounted.current) setProfile(created);
     } catch (err) {
       console.error('fetchProfile failed:', err);
     }
@@ -56,7 +101,7 @@ export function useAuth() {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
-          await fetchProfile(currentUser.id);
+          await fetchProfile(currentUser);
         }
       } catch (err) {
         console.error('getUser failed:', err);
@@ -72,7 +117,7 @@ export function useAuth() {
         if (!mounted.current) return;
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user);
         } else {
           setProfile(null);
         }

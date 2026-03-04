@@ -4,21 +4,8 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
-
-async function verifyAdmin() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  return profile?.role === 'admin' ? user : null;
-}
+import { createAdminSupabaseClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/admin';
 
 // Create banner
 export async function POST(request: Request) {
