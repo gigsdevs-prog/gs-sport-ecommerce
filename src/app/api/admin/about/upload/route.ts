@@ -10,20 +10,26 @@ export async function POST(request: Request) {
   try {
     // 1. Verify admin
     const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('About upload auth error:', authError?.message);
+      return NextResponse.json({ 
+        error: 'Unauthorized: ' + (authError?.message || 'No user session found. Please log in again.') 
+      }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
     if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      console.error('About upload forbidden:', profileError?.message, 'role:', profile?.role);
+      return NextResponse.json({ 
+        error: 'Forbidden: ' + (profileError?.message || `role is "${profile?.role}", need "admin"`) 
+      }, { status: 403 });
     }
 
     // 2. Parse upload
