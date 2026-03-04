@@ -14,7 +14,7 @@ import type { User } from '@supabase/supabase-js';
 // Module-level singleton — always same reference
 const supabase = createClient();
 
-const AUTH_TIMEOUT_MS = 5_000;
+const AUTH_TIMEOUT_MS = 15_000;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
