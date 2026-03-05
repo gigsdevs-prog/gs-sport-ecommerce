@@ -18,11 +18,11 @@ import { useLanguage, LanguageSelector } from '@/hooks/useLanguage';
 import { NAV_LINKS } from '@/lib/constants';
 
 const TOP_BAR_MESSAGES = [
-  'FREE SHIPPING ON ORDERS OVER $30',
-  'NEW ARRIVALS EVERY WEEK',
-  'PREMIUM ATHLETIC WEAR',
-  '30-DAY EASY RETURNS',
-  'SIGN UP & GET 10% OFF',
+  'topbar_free_shipping',
+  'topbar_new_arrivals',
+  'topbar_premium_athletic',
+  'topbar_easy_returns',
+  'topbar_signup_discount',
 ];
 
 export default function Header() {
@@ -85,7 +85,7 @@ export default function Header() {
                     transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className="text-[10px] sm:text-xs tracking-[0.25em] uppercase font-light absolute"
                   >
-                    {TOP_BAR_MESSAGES[topBarIndex]}
+                    {t(TOP_BAR_MESSAGES[topBarIndex])}
                   </motion.span>
                 </AnimatePresence>
               </div>

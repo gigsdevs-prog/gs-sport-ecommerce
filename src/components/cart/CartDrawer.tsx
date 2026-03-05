@@ -10,10 +10,12 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatPrice } from '@/utils';
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, getTotal } = useCartStore();
+  const { t } = useLanguage();
 
   return (
     <AnimatePresence>
@@ -41,7 +43,7 @@ export default function CartDrawer() {
               <div className="flex items-center gap-3">
                 <ShoppingBag size={20} />
                 <span className="text-sm font-semibold tracking-widest uppercase">
-                  Cart ({items.length})
+                  {t('cart')} ({items.length})
                 </span>
               </div>
               <button
@@ -57,12 +59,12 @@ export default function CartDrawer() {
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <ShoppingBag size={48} className="text-neutral-200 mb-4" />
-                  <p className="text-neutral-500 text-sm mb-6">Your cart is empty</p>
+                  <p className="text-neutral-500 text-sm mb-6">{t('cart_empty')}</p>
                   <button
                     onClick={closeCart}
                     className="text-sm tracking-widest uppercase border-b border-black pb-1 hover:text-neutral-600 transition-colors"
                   >
-                    Continue Shopping
+                    {t('continue_shopping')}
                   </button>
                 </div>
               ) : (
@@ -143,24 +145,24 @@ export default function CartDrawer() {
             {items.length > 0 && (
               <div className="border-t border-neutral-100 px-6 py-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500">Subtotal</span>
+                  <span className="text-sm text-neutral-500">{t('subtotal')}</span>
                   <span className="text-lg font-semibold">{formatPrice(getTotal())}</span>
                 </div>
                 <p className="text-xs text-neutral-400">
-                  Shipping and taxes calculated at checkout
+                  {t('shipping_taxes_checkout')}
                 </p>
                 <Link
                   href="/checkout"
                   onClick={closeCart}
                   className="block w-full bg-black text-white text-center py-4 text-sm tracking-widest uppercase font-medium hover:bg-neutral-800 transition-colors"
                 >
-                  Checkout
+                  {t('checkout')}
                 </Link>
                 <button
                   onClick={closeCart}
                   className="block w-full text-center py-2 text-sm text-neutral-500 hover:text-black transition-colors"
                 >
-                  Continue Shopping
+                  {t('continue_shopping')}
                 </button>
               </div>
             )}

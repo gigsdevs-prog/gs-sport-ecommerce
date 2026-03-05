@@ -14,13 +14,6 @@ import SectionHeading from '@/components/ui/SectionHeading';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import type { Category } from '@/types';
 
-const fallbackCategories = [
-  { name: 'Men', slug: 'men', image: null },
-  { name: 'Women', slug: 'women', image: null },
-  { name: 'Accessories', slug: 'accessories', image: null },
-  { name: 'Shoes', slug: 'shoes', image: null },
-];
-
 const supabase = createClient();
 
 // Animation variants
@@ -47,6 +40,13 @@ export default function CategoriesGrid() {
   const [bestSellerImages, setBestSellerImages] = useState<Record<string, string>>({});
   const { getText } = useSiteContent();
   const mounted = useRef(true);
+
+  const fallbackCategories = [
+    { name: getText('category_men'), slug: 'men', image: null },
+    { name: getText('category_women'), slug: 'women', image: null },
+    { name: getText('category_accessories'), slug: 'accessories', image: null },
+    { name: getText('category_shoes'), slug: 'shoes', image: null },
+  ];
 
   useEffect(() => {
     mounted.current = true;
@@ -192,7 +192,7 @@ export default function CategoriesGrid() {
                       <div className="translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out">
                         <div className="bg-white/95 backdrop-blur-sm px-4 py-2.5 text-center rounded flex items-center justify-center gap-2">
                           <span className="text-xs tracking-[0.15em] uppercase font-medium text-neutral-800">
-                            Shop Now
+                            {getText('shop_now')}
                           </span>
                           <ArrowRight size={14} className="text-neutral-600" />
                         </div>

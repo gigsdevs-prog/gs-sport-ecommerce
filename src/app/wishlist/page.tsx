@@ -10,15 +10,18 @@ import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useWishlistStore } from '@/store/wishlist';
+import { useLanguage } from '@/hooks/useLanguage';
 import ProductCard from '@/components/product/ProductCard';
-import { ProductGridSkeleton } from '@/components/ui/Skeleton';
+
 import Button from '@/components/ui/Button';
 import type { Product } from '@/types';
 
 const supabase = createClient();
 
 export default function WishlistPage() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const { items } = useWishlistStore();
   const mounted = useRef(true);
@@ -55,25 +58,22 @@ export default function WishlistPage() {
   }, [items]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl font-light tracking-wide mb-2">Wishlist</h1>
+        <h1 className="text-3xl font-light tracking-wide mb-2">{t('wishlist')}</h1>
         <p className="text-sm text-neutral-500 mb-10">
-          {items.length} item{items.length !== 1 ? 's' : ''}
+          {t('wishlist_count').replace('{count}', String(items.length))}
         </p>
-
-        {loading ? (
-          <ProductGridSkeleton count={4} />
-        ) : products.length === 0 ? (
+        {items.length === 0 ? (
           <div className="text-center py-16">
             <Heart size={48} className="text-neutral-200 mx-auto mb-4" />
-            <p className="text-neutral-500 mb-6">Your wishlist is empty</p>
+            <p className="text-neutral-500 mb-6">{t('wishlist_empty')}</p>
             <Link href="/shop">
-              <Button variant="outline">Browse Products</Button>
+              <Button variant="outline">{t('browse_products')}</Button>
             </Link>
           </div>
         ) : (

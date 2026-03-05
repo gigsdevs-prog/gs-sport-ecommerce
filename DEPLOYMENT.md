@@ -5,7 +5,6 @@
 - Node.js 18+
 - npm or yarn
 - A [Supabase](https://supabase.com) project
-- A [Stripe](https://stripe.com) account
 - A [Vercel](https://vercel.com) account (recommended)
 
 ---
@@ -37,20 +36,6 @@ From **Settings → API**, copy:
 
 ---
 
-## 2. Stripe Setup
-
-1. Go to [dashboard.stripe.com](https://dashboard.stripe.com)
-2. Get your keys from **Developers → API Keys**:
-   - `Publishable key` → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-   - `Secret key` → `STRIPE_SECRET_KEY`
-
-### Webhook Setup
-1. Go to **Developers → Webhooks**
-2. Add endpoint: `https://your-domain.com/api/webhook`
-3. Select event: `checkout.session.completed`
-4. Copy the **Signing secret** → `STRIPE_WEBHOOK_SECRET`
-
----
 
 ## 3. Environment Variables
 

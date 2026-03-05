@@ -48,7 +48,7 @@ export default function PromoBanner() {
                   transition={{ delay: 0.2 }}
                   className="text-xs tracking-[0.3em] uppercase text-neutral-400 mb-4"
                 >
-                  Limited Time Offer
+                  {getText('promo_limited_offer')}
                 </motion.p>
                 <motion.h2
                   initial={{ opacity: 0, y: 20 }}

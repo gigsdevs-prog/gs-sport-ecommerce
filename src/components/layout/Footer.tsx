@@ -100,7 +100,6 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-6">
               <Image src={logoUrl} alt="GS SPORT" width={200} height={200} className="h-14 w-auto brightness-0 invert" />
-              <span className="text-white text-xl font-semibold tracking-wide -ml-1">• Sport</span>
             </Link>
             <p className="text-neutral-400 text-sm leading-relaxed mb-6">
               {getText('footer_about')}
@@ -130,19 +129,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Shop */}
-          <div>
-            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">{t('shop')}</h3>
-            <ul className="space-y-3">
-              {footerLinks.shop.map(link => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-neutral-400 hover:text-white transition-colors duration-300">
-                    {t(link.key)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
 
           {/* Help */}
           <div>

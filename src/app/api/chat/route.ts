@@ -23,6 +23,7 @@ async function ensureChatTables(supabase: ReturnType<typeof createAdminSupabaseC
         user_id text,
         guest_name text NOT NULL DEFAULT 'Guest',
         status text NOT NULL DEFAULT 'active',
+        unread_count integer NOT NULL DEFAULT 0,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       );
@@ -155,12 +156,34 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      // Update session timestamp
+      // Update session timestamp and unread count
+      if (!is_admin) {
+        // User message: increment unread_count
+        await supabase
+          .from('chat_sessions')
+          .update({ updated_at: new Date().toISOString(), unread_count: supabase.rpc('increment_unread_count', { chatid: chat_id }) })
+          .eq('id', chat_id);
+      } else {
+        // Admin message: just update timestamp
+        await supabase
+          .from('chat_sessions')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', chat_id);
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // Mark as read (reset unread_count)
+    if (action === 'mark_read') {
+      const { chat_id } = body;
+      if (!chat_id) {
+        return NextResponse.json({ error: 'Missing chat_id' }, { status: 400 });
+      }
       await supabase
         .from('chat_sessions')
-        .update({ updated_at: new Date().toISOString() })
+        .update({ unread_count: 0 })
         .eq('id', chat_id);
-
       return NextResponse.json({ success: true });
     }
 

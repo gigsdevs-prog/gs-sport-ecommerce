@@ -8,30 +8,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Send, User, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
-  // Delete a chat session and its messages
-  const deleteSession = async (chatId: string) => {
-    if (!window.confirm('Are you sure you want to delete this chat and all its messages?')) return;
-    try {
-      const { error } = await supabase
-        .from('chat_sessions')
-        .delete()
-        .eq('id', chatId);
-      if (error) {
-        console.error('Delete session error:', error);
-        toast.error('Failed to delete chat');
-        return;
-      }
-      toast.success('Chat deleted');
-      if (selectedChat === chatId) {
-        setSelectedChat(null);
-        setMessages([]);
-      }
-      fetchSessions();
-    } catch (err) {
-      console.error('Delete session exception:', err);
-      toast.error('Failed to delete chat');
-    }
-  };
+// ...existing code...
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
@@ -66,6 +43,31 @@ export default function AdminChatPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // ...existing code...
+  // Delete a chat session and its messages
+  const deleteSession = async (chatId: string) => {
+    if (!window.confirm('Are you sure you want to delete this chat and all its messages?')) return;
+    try {
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('id', chatId);
+      if (error) {
+        console.error('Delete session error:', error);
+        toast.error('Failed to delete chat');
+        return;
+      }
+      toast.success('Chat deleted');
+      if (selectedChat === chatId) {
+        setSelectedChat(null);
+        setMessages([]);
+      }
+      fetchSessions();
+    } catch (err) {
+      console.error('Delete session exception:', err);
+      toast.error('Failed to delete chat');
+    }
+  };
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -267,8 +269,15 @@ export default function AdminChatPage() {
               sessions.map(session => (
                 <div key={session.id} className={`group flex items-center justify-between px-4 py-3 border-b border-neutral-50 hover:bg-neutral-50 transition-colors ${selectedChat === session.id ? 'bg-neutral-50' : ''}`}>
                   <button
-                    onClick={() => loadMessages(session.id)}
-                    className="flex-1 text-left focus:outline-none"
+                    onClick={async () => {
+                      await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'mark_read', chat_id: session.id }),
+                      });
+                      loadMessages(session.id);
+                    }}
+                    className="flex-1 text-left focus:outline-none relative"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
@@ -276,6 +285,9 @@ export default function AdminChatPage() {
                         <span className="text-sm font-medium truncate max-w-[120px]">
                           {session.guest_name || 'Customer'}
                         </span>
+                        {session.unread_count && session.unread_count > 0 && (
+                          <span className="ml-2 w-2.5 h-2.5 bg-blue-500 rounded-full inline-block" title="Unread messages" />
+                        )}
                       </div>
                       <span className="text-[10px] text-neutral-400">
                         {formatTime(session.updated_at)}

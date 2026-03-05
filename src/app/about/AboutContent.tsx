@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/hooks/useLanguage';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Phone } from 'lucide-react';
@@ -42,6 +43,7 @@ function TikTokIcon({ className }: { className?: string }) {
 export default function AboutContent() {
   const [about, setAbout] = useState<AboutPage | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchAbout = async () => {
@@ -68,7 +70,7 @@ export default function AboutContent() {
   if (!about) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <p className="text-neutral-500">About page content not available.</p>
+        <p className="text-neutral-500">{t('about_not_available')}</p>
       </div>
     );
   }
@@ -116,7 +118,7 @@ export default function AboutContent() {
               variants={fadeInUp}
               className="text-xs tracking-[0.3em] uppercase text-neutral-400 mb-4 font-medium"
             >
-              Our Story
+              {t('our_story')}
             </motion.p>
             <motion.h1
               variants={fadeInUp}

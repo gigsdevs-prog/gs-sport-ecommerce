@@ -2,12 +2,9 @@
 // GS SPORT - FAQ Page
 // ============================================
 
-import { SITE_NAME } from '@/lib/constants';
+'use client';
 
-export const metadata = {
-  title: 'FAQ',
-  description: `Frequently Asked Questions about ${SITE_NAME}.`,
-};
+import { useLanguage } from '@/hooks/useLanguage';
 
 const faqs = [
   {
@@ -45,12 +42,14 @@ const faqs = [
 ];
 
 export default function FAQPage() {
+  const { t } = useLanguage();
+
   return (
     <main className="min-h-screen bg-white pt-32 pb-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold tracking-tight text-neutral-900 mb-4">FAQ</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-neutral-900 mb-4">{t('faq')}</h1>
         <p className="text-lg text-neutral-600 mb-12">
-          Find answers to our most frequently asked questions.
+          {t('faq_intro')}
         </p>
 
         <div className="space-y-6">
@@ -63,8 +62,8 @@ export default function FAQPage() {
         </div>
 
         <div className="mt-12 bg-neutral-50 rounded-xl p-6 text-center">
-          <p className="text-neutral-900 font-semibold mb-2">Still have questions?</p>
-          <p className="text-neutral-600 text-sm mb-4">We&apos;re here to help.</p>
+          <p className="text-neutral-900 font-semibold mb-2">{t('faq_still_questions')}</p>
+          <p className="text-neutral-600 text-sm mb-4">{t('faq_help')}</p>
           <a
             href="/contact"
             className="inline-block bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"

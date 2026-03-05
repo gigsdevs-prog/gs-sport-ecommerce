@@ -109,7 +109,7 @@ export default function HeroSection() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="text-xs tracking-[0.3em] uppercase text-white/80 mb-4 font-medium"
             >
-              GS SPORT
+              {getText('hero_brand')}
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
