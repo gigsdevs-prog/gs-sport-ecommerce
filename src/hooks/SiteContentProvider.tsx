@@ -27,41 +27,53 @@ const SiteContentContext = createContext<SiteContentContextValue>({
   refresh: async () => {},
 });
 
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 20_000;
+const MAX_RETRIES = 2;
 
 // Deduplicate concurrent fetches (race-safe)
 let fetchPromise: Promise<Record<string, string>> | null = null;
+
+async function fetchOnce(): Promise<Record<string, string>> {
+  const supabase = createClient();
+
+  // Race the fetch against a timeout
+  const result = await Promise.race([
+    supabase.from('site_content').select('*'),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Site content fetch timed out')), FETCH_TIMEOUT_MS)
+    ),
+  ]);
+
+  const { data, error } = result as { data: SiteContent[] | null; error: { message: string } | null };
+  const contentMap: Record<string, string> = { ...DEFAULT_CONTENT };
+  if (error) {
+    console.warn('Failed to fetch site content:', error);
+  }
+  if (data) {
+    data.forEach((item: SiteContent) => {
+      contentMap[item.key] = item.value;
+    });
+  }
+  return contentMap;
+}
 
 async function fetchSiteContent(): Promise<Record<string, string>> {
   if (fetchPromise) return fetchPromise;
 
   const promise = (async () => {
-    try {
-      const supabase = createClient();
-
-      // Race the fetch against a timeout
-      const result = await Promise.race([
-        supabase.from('site_content').select('*'),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Site content fetch timed out')), FETCH_TIMEOUT_MS)
-        ),
-      ]);
-
-      const { data, error } = result as { data: SiteContent[] | null; error: { message: string } | null };
-      const contentMap: Record<string, string> = { ...DEFAULT_CONTENT };
-      if (error) {
-        console.error('Failed to fetch site content:', error);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await fetchOnce();
+      } catch (err) {
+        if (attempt < MAX_RETRIES) {
+          console.warn(`Site content fetch attempt ${attempt} failed, retrying...`);
+        } else {
+          console.warn('Site content fetch failed after retries, using defaults');
+          return { ...DEFAULT_CONTENT };
+        }
       }
-      if (data) {
-        data.forEach((item: SiteContent) => {
-          contentMap[item.key] = item.value;
-        });
-      }
-      return contentMap;
-    } catch (err) {
-      console.error('Site content fetch failed:', err);
-      return { ...DEFAULT_CONTENT };
     }
+    return { ...DEFAULT_CONTENT };
   })();
 
   fetchPromise = promise;

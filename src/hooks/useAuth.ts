@@ -14,7 +14,8 @@ import type { User } from '@supabase/supabase-js';
 // Module-level singleton — always same reference
 const supabase = createClient();
 
-const AUTH_TIMEOUT_MS = 15_000;
+const AUTH_TIMEOUT_MS = 20_000;
+const SESSION_TIMEOUT_MS = 8_000;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -96,15 +97,21 @@ export function useAuth() {
       try {
         // Use getSession() first — it reads from local cache and is instant.
         // getUser() makes a network call and is slower.
-        const { data: { session } } = await supabase.auth.getSession();
+        // Wrap in a timeout so a hanging refresh doesn't block the UI.
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) =>
+            setTimeout(() => resolve(null), SESSION_TIMEOUT_MS)
+          ),
+        ]);
         if (!mounted.current) return;
-        const currentUser = session?.user ?? null;
+        const currentUser = sessionResult?.data?.session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
           await fetchProfile(currentUser);
         }
       } catch (err) {
-        console.error('getUser failed:', err);
+        console.warn('getUser failed:', err);
       } finally {
         if (mounted.current) setLoading(false);
       }
