@@ -179,7 +179,6 @@ export function Scene() {
     <>
       <LightSweep />
       <LogoText />
-      <SportText />
       <ReflectiveFloor />
       <ParallaxCamera />
       <Environment preset="studio" environmentIntensity={0.5} />

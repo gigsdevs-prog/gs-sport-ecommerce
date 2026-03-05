@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase/client';
 import type { Banner } from '@/types';
 
@@ -16,6 +17,7 @@ const supabase = createClient();
 
 export default function HeroSection() {
   const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentBanner, setCurrentBanner] = useState(0);
   const mounted = useRef(true);
@@ -109,7 +111,7 @@ export default function HeroSection() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="text-xs tracking-[0.3em] uppercase text-white/80 mb-4 font-medium"
             >
-              {getText('hero_brand')}
+              {getText('hero_brand') || 'GS SPORT'}
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
@@ -119,7 +121,7 @@ export default function HeroSection() {
                 banners.length > 0 ? 'text-white' : 'text-neutral-900'
               }`}
             >
-              {getText('hero_headline')}
+              {t('hero_headline')}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -129,7 +131,7 @@ export default function HeroSection() {
                 banners.length > 0 ? 'text-white/80' : 'text-neutral-600'
               } max-w-md leading-relaxed`}
             >
-              {getText('hero_subheadline')}
+              {t('hero_subheadline')}
             </motion.p>
           </motion.div>
         </div>
@@ -157,7 +159,7 @@ export default function HeroSection() {
         href="/shop"
         className="inline-block bg-black text-white px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium border border-black hover:bg-white hover:text-black transition-all duration-500"
       >
-        {getText('hero_cta')}
+        {t('hero_cta')}
       </Link>
     </div>
     </>

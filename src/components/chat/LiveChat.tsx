@@ -68,33 +68,6 @@ export default function LiveChat() {
   // Load or create chat session
   const startChat = useCallback(async () => {
     try {
-      const sessionId = localStorage.getItem('gs_chat_id');
-
-      if (sessionId) {
-        setChatId(sessionId);
-        setHasStarted(true);
-
-        // Load existing messages via API
-        try {
-          const res = await fetch(`/api/chat?chat_id=${encodeURIComponent(sessionId)}`);
-          const data = await res.json();
-
-          if (!res.ok || data.error) {
-            console.error('Chat messages load error:', data.error);
-            localStorage.removeItem('gs_chat_id');
-            setChatId(null);
-            setHasStarted(false);
-            return;
-          }
-          if (data.messages) setMessages(data.messages);
-        } catch {
-          localStorage.removeItem('gs_chat_id');
-          setChatId(null);
-          setHasStarted(false);
-        }
-        return;
-      }
-
       // Create new chat via API
       const newChatId = crypto.randomUUID();
       const senderName = user ? (profile?.full_name || 'Customer') : (guestName || 'Guest');
@@ -124,7 +97,7 @@ export default function LiveChat() {
     } catch (err) {
       console.error('startChat error:', err);
     }
-  }, [user, profile, guestName]);
+  }, [user, profile, guestName, t]);
 
   // Subscribe to realtime messages
   useEffect(() => {
@@ -241,15 +214,6 @@ export default function LiveChat() {
     }
   };
 
-  const endChat = () => {
-    localStorage.removeItem('gs_chat_id');
-    setChatId(null);
-    setMessages([]);
-    setHasStarted(false);
-    setIsOpen(false);
-    setGuestName('');
-  };
-
   return (
     <>
       {/* Floating buttons */}
@@ -294,7 +258,7 @@ export default function LiveChat() {
               <div>
                 <h3 className="text-sm font-semibold tracking-wider">GS SPORT</h3>
                 <p className="text-[10px] text-neutral-400 tracking-wider uppercase mt-0.5">
-                  Live Chat Support
+                  {t('live_chat_support')}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -306,9 +270,9 @@ export default function LiveChat() {
                   <Minimize2 size={16} />
                 </button>
                 <button
-                  onClick={endChat}
+                  onClick={() => setIsOpen(false)}
                   className="p-1.5 text-neutral-400 hover:text-white transition-colors"
-                  aria-label="Close chat"
+                  aria-label="Close"
                 >
                   <X size={16} />
                 </button>

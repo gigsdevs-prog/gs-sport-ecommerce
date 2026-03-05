@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import SectionHeading from '@/components/ui/SectionHeading';
-import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 import type { Category } from '@/types';
 
 const supabase = createClient();
@@ -38,14 +38,14 @@ const cardVariants = {
 export default function CategoriesGrid() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [bestSellerImages, setBestSellerImages] = useState<Record<string, string>>({});
-  const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const mounted = useRef(true);
 
   const fallbackCategories = [
-    { name: getText('category_men'), slug: 'men', image: null },
-    { name: getText('category_women'), slug: 'women', image: null },
-    { name: getText('category_accessories'), slug: 'accessories', image: null },
-    { name: getText('category_shoes'), slug: 'shoes', image: null },
+    { name: t('category_men'), slug: 'men', image: null },
+    { name: t('category_women'), slug: 'women', image: null },
+    { name: t('category_accessories'), slug: 'accessories', image: null },
+    { name: t('category_shoes'), slug: 'shoes', image: null },
   ];
 
   useEffect(() => {
@@ -126,8 +126,8 @@ export default function CategoriesGrid() {
     <section className="py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          title={getText('categories_title')}
-          subtitle={getText('categories_subtitle')}
+          title={t('shop_by_category')}
+          subtitle={t('find_your_fit')}
         />
 
         <motion.div
@@ -192,7 +192,7 @@ export default function CategoriesGrid() {
                       <div className="translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out">
                         <div className="bg-white/95 backdrop-blur-sm px-4 py-2.5 text-center rounded flex items-center justify-center gap-2">
                           <span className="text-xs tracking-[0.15em] uppercase font-medium text-neutral-800">
-                            {getText('shop_now')}
+                            {t('shop_now')}
                           </span>
                           <ArrowRight size={14} className="text-neutral-600" />
                         </div>

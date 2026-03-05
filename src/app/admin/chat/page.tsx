@@ -8,7 +8,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Send, User, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
-// ...existing code...
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
@@ -43,7 +42,7 @@ export default function AdminChatPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // ...existing code...
+
   // Delete a chat session and its messages
   const deleteSession = async (chatId: string) => {
     if (!window.confirm('Are you sure you want to delete this chat and all its messages?')) return;
@@ -221,6 +220,26 @@ export default function AdminChatPage() {
     }
   };
 
+  const deleteAllSessions = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL chats? This cannot be undone.')) return;
+    try {
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .neq('id', '');
+      if (error) {
+        toast.error('Failed to delete all chats');
+        return;
+      }
+      toast.success('All chats deleted');
+      setSelectedChat(null);
+      setMessages([]);
+      fetchSessions();
+    } catch {
+      toast.error('Failed to delete all chats');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -252,10 +271,20 @@ export default function AdminChatPage() {
       <div className="bg-white rounded-xl border border-neutral-100 overflow-hidden flex" style={{ height: 'calc(100vh - 250px)', minHeight: '500px' }}>
         {/* Sessions list */}
         <div className="w-80 border-r border-neutral-100 flex flex-col shrink-0">
-          <div className="px-4 py-3 border-b border-neutral-100">
+          <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
             <h3 className="text-xs tracking-widest uppercase text-neutral-500 font-medium">
               Conversations ({sessions.filter(s => s.status === 'active').length} active)
             </h3>
+            {sessions.length > 0 && (
+              <button
+                onClick={deleteAllSessions}
+                className="text-[10px] text-red-400 hover:text-red-600 transition-colors flex items-center gap-1"
+                title="Delete all chats"
+              >
+                <Trash2 size={12} />
+                Clear All
+              </button>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto">
             {loading ? (

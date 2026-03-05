@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/hooks/useLanguage';
 
 // ---- Ease curve ----
 const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -100,6 +101,7 @@ export default function ThreeDWelcome() {
   const [show, setShow] = useState(true);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'loading' | 'reveal' | 'text' | 'fadeout'>('loading');
+  const { t } = useLanguage();
 
   // Skip animation for returning visitors in this session
   useEffect(() => {
@@ -174,23 +176,6 @@ export default function ThreeDWelcome() {
           {/* Centered Logo */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <AnimatedLogo phase={phase} />
-
-            {/* SPORT text below logo */}
-            <motion.p
-              className="text-xl md:text-2xl lg:text-3xl tracking-[0.5em] font-bold text-black mt-4 md:mt-6"
-              initial={{ opacity: 0, y: 12 }}
-              animate={
-                phase === 'text' || phase === 'fadeout'
-                  ? {
-                      opacity: phase === 'fadeout' ? 0 : 1,
-                      y: 0,
-                    }
-                  : { opacity: 0, y: 12 }
-              }
-              transition={{ duration: 0.7, delay: 0.1, ease: EASE_OUT }}
-            >
-              SPORT
-            </motion.p>
           </div>
 
           {/* Bottom text overlay */}
@@ -205,7 +190,7 @@ export default function ThreeDWelcome() {
               }
               transition={{ duration: 0.8, delay: 0, ease: EASE_OUT }}
             >
-              Welcome to GS Sport
+              {t('welcome_to')}
             </motion.p>
             <motion.p
               className="text-[9px] md:text-[10px] tracking-[0.5em] uppercase text-neutral-400 mt-3"
@@ -217,7 +202,7 @@ export default function ThreeDWelcome() {
               }
               transition={{ duration: 0.8, delay: 0.2, ease: EASE_OUT }}
             >
-              Performance · Minimalism · Power
+              {t('performance_tagline')}
             </motion.p>
           </div>
 
@@ -231,7 +216,7 @@ export default function ThreeDWelcome() {
             animate={{ opacity: phase === 'text' ? 0.5 : 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            Click anywhere to enter
+            {t('click_enter')}
           </motion.p>
         </motion.div>
       )}

@@ -6,13 +6,11 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useSiteContent } from '@/hooks/useSiteContent';
 import { useLanguage } from '@/hooks/useLanguage';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import toast from 'react-hot-toast';
 
 export default function Newsletter() {
-  const { getText } = useSiteContent();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +22,7 @@ export default function Newsletter() {
     setLoading(true);
     // Simulate subscription
     await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Thank you for subscribing!');
+    toast.success(t('subscribed_success'));
     setEmail('');
     setLoading(false);
   };
@@ -35,10 +33,10 @@ export default function Newsletter() {
         <ScrollReveal>
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-2xl lg:text-4xl font-light tracking-wide text-neutral-900">
-              {getText('newsletter_title')}
+              {t('newsletter_title')}
             </h2>
             <p className="mt-4 text-sm text-neutral-500 tracking-wide">
-              {getText('newsletter_subtitle')}
+              {t('newsletter_subtitle')}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-8 flex flex-col sm:flex-row gap-3">

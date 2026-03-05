@@ -8,10 +8,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 
 export default function PromoBanner() {
   const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const promoImage = getText('promo_image_url');
 
   return (
@@ -48,7 +50,7 @@ export default function PromoBanner() {
                   transition={{ delay: 0.2 }}
                   className="text-xs tracking-[0.3em] uppercase text-neutral-400 mb-4"
                 >
-                  {getText('promo_limited_offer')}
+                  {t('limited_offer')}
                 </motion.p>
                 <motion.h2
                   initial={{ opacity: 0, y: 20 }}
@@ -57,7 +59,7 @@ export default function PromoBanner() {
                   transition={{ delay: 0.3 }}
                   className="text-3xl lg:text-5xl font-light text-white tracking-tight"
                 >
-                  {getText('promo_title')}
+                  {t('promo_title')}
                 </motion.h2>
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
@@ -66,7 +68,7 @@ export default function PromoBanner() {
                   transition={{ delay: 0.4 }}
                   className="mt-4 text-neutral-400 text-base lg:text-lg"
                 >
-                  {getText('promo_subtitle')}
+                  {t('promo_subtitle')}
                 </motion.p>
               </div>
             </div>
@@ -84,7 +86,7 @@ export default function PromoBanner() {
               href="/shop"
               className="inline-block bg-black text-white px-10 py-4 text-sm tracking-[0.2em] uppercase font-medium hover:bg-neutral-800 transition-colors duration-300"
             >
-              {getText('promo_cta')}
+              {t('shop_sale')}
             </Link>
           </motion.div>
         </ScrollReveal>

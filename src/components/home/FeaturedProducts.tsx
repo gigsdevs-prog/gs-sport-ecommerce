@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import SectionHeading from '@/components/ui/SectionHeading';
 import ProductSlider from '@/components/product/ProductSlider';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
-import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 import type { Product } from '@/types';
 
 const supabase = createClient();
@@ -17,7 +17,7 @@ const supabase = createClient();
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -52,8 +52,8 @@ export default function FeaturedProducts() {
     <section className="py-16 lg:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          title={getText('featured_title')}
-          subtitle={getText('featured_subtitle')}
+          title={t('featured_title')}
+          subtitle={t('featured_subtitle')}
         />
 
         {loading ? (

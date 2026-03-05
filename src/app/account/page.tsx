@@ -37,8 +37,8 @@ export default function Page() {
   const stats = [
     { label: t('orders'), value: recentOrders.length, icon: Package, href: '/account/orders', color: 'text-blue-500' },
     { label: t('wishlist'), value: wishlistCount, icon: Heart, href: '/wishlist', color: 'text-red-500' },
-    { label: t('addresses'), value: '\u2014', icon: MapPin, href: '/checkout', color: 'text-green-500' },
-    { label: t('reviews'), value: '\u2014', icon: Star, href: '#', color: 'text-purple-500' },
+    { label: t('addresses'), value: '\u2014', icon: MapPin, href: '/account/addresses', color: 'text-green-500' },
+    { label: t('reviews_label'), value: '\u2014', icon: Star, href: '#', color: 'text-purple-500' },
   ];
 
   const quickLinks = [
