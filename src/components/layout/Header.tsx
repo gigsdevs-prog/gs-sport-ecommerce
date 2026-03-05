@@ -31,12 +31,12 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [topBarIndex, setTopBarIndex] = useState(0);
-  const { openCart, getItemCount } = useCartStore();
+  const openCart = useCartStore(s => s.openCart);
+  const itemCount = useCartStore(s => s.items.reduce((n, i) => n + i.quantity, 0));
   const { user, isAdmin } = useAuth();
   const { getText } = useSiteContent();
   const { t } = useLanguage();
   const logoUrl = getText('site_logo_url') || '/logo.png';
-  const itemCount = getItemCount();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);

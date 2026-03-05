@@ -4,7 +4,7 @@
 
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -21,25 +21,25 @@ interface ProductCardProps {
 }
 
 const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCardProps) {
-  const { toggleItem, isInWishlist } = useWishlistStore();
-  const { addItem } = useCartStore();
+  const toggleItem = useWishlistStore(s => s.toggleItem);
+  const isWishlisted = useWishlistStore(s => s.items.includes(product.id));
+  const addItem = useCartStore(s => s.addItem);
   const { t } = useLanguage();
-  const isWishlisted = isInWishlist(product.id);
-  const discount = product.compare_at_price
+  const discount = useMemo(() => product.compare_at_price
     ? getDiscountPercentage(product.price, product.compare_at_price)
-    : 0;
+    : 0, [product.price, product.compare_at_price]);
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
+  const handleQuickAdd = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(product, 1, product.sizes?.[0] || '', product.colors?.[0] || '');
-  };
+  }, [addItem, product]);
 
-  const handleWishlist = (e: React.MouseEvent) => {
+  const handleWishlist = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleItem(product.id);
-  };
+  }, [toggleItem, product.id]);
 
   return (
     <motion.div

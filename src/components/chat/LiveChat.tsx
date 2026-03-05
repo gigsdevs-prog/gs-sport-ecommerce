@@ -35,27 +35,9 @@ export default function LiveChat() {
   const [guestName, setGuestName] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_whatsappPhone, setWhatsappPhone] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user, profile } = useAuth();
   const { t } = useLanguage();
-
-  // Fetch WhatsApp phone from about_page
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from('about_page')
-          .select('phone')
-          .limit(1)
-          .single();
-        if (data?.phone) setWhatsappPhone(data.phone);
-      } catch {
-        // ignore
-      }
-    })();
-  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,7 +98,16 @@ export default function LiveChat() {
         (payload) => {
           const newMsg = payload.new as ChatMessage;
           setMessages(prev => {
+            // Deduplicate: skip if already present by real id
             if (prev.some(m => m.id === newMsg.id)) return prev;
+            // Replace optimistic messages with same content from server
+            const hasOptimistic = prev.some(m => m.id.startsWith('opt_') && m.message === newMsg.message && !m.is_admin && !newMsg.is_admin);
+            if (hasOptimistic) {
+              return prev.map(m =>
+                m.id.startsWith('opt_') && m.message === newMsg.message && !m.is_admin
+                  ? newMsg : m
+              );
+            }
             return [...prev, newMsg];
           });
           if (!isOpen && newMsg.is_admin) {
@@ -171,9 +162,20 @@ export default function LiveChat() {
     setInput('');
     setSending(true);
 
-    try {
-      const senderName = user ? (profile?.full_name || 'Customer') : (guestName || 'Guest');
+    // Optimistic UI: show message instantly
+    const optimisticId = `opt_${Date.now()}`;
+    const senderName = user ? (profile?.full_name || 'Customer') : (guestName || 'Guest');
+    setMessages(prev => [...prev, {
+      id: optimisticId,
+      chat_id: chatId,
+      sender_id: user?.id || 'guest',
+      sender_name: senderName,
+      message: msg,
+      is_admin: false,
+      created_at: new Date().toISOString(),
+    }]);
 
+    try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -191,13 +193,8 @@ export default function LiveChat() {
       if (!res.ok || data.error) {
         console.error('Send message error:', data.error);
         setInput(msg);
-      } else {
-        // Fetch latest messages after sending
-        const fetchRes = await fetch(`/api/chat?chat_id=${encodeURIComponent(chatId)}`);
-        const fetchData = await fetchRes.json();
-        if (fetchRes.ok && fetchData.messages) {
-          setMessages(fetchData.messages);
-        }
+        // Remove optimistic message on failure
+        setMessages(prev => prev.filter(m => m.id !== optimisticId));
       }
     } catch (err) {
       console.error('Send message exception:', err);

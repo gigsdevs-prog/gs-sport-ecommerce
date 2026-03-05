@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_NAME } from '@/lib/constants';
@@ -94,15 +94,15 @@ export default function Footer() {
     fetchAbout();
   }, []);
 
-  const socialLinks = about ? [
+  const socialLinks = useMemo(() => about ? [
     { url: about.instagram_url, icon: InstagramIcon, label: 'Instagram' },
     { url: about.facebook_url, icon: FacebookIcon, label: 'Facebook' },
     { url: about.tiktok_url, icon: TikTokIcon, label: 'TikTok' },
-  ].filter(s => s.url && s.url.trim() !== '') : [];
+  ].filter(s => s.url && s.url.trim() !== '') : [], [about]);
 
-  const whatsappUrl = about?.phone
+  const whatsappUrl = useMemo(() => about?.phone
     ? `https://wa.me/${about.phone.replace(/[^0-9+]/g, '').replace('+', '')}`
-    : null;
+    : null, [about?.phone]);
 
   return (
     <footer className="bg-neutral-950 text-white">
