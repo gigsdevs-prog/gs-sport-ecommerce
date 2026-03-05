@@ -8,9 +8,6 @@ import { createAdminSupabaseClient } from '@/lib/supabase/server';
 
 // Ensure chat tables exist
 async function ensureChatTables(supabase: ReturnType<typeof createAdminSupabaseClient>) {
-  // Check if chat_sessions table exists
-  const { data: tables } = await supabase.rpc('to_regclass', { name: 'public.chat_sessions' }).maybeSingle();
-  
   // If tables don't exist, they need to be created via SQL
   // We use raw SQL via supabase-js
   const { error: checkError } = await supabase
