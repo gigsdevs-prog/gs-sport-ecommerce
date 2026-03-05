@@ -44,8 +44,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="inline-block mb-6">
-              <Image src={logoUrl} alt="GS SPORT" width={100} height={100} className="h-8 w-auto brightness-0 invert" />
+            <Link href="/" className="flex items-center gap-2 mb-6">
+              <Image src={logoUrl} alt="GS SPORT" width={200} height={200} className="h-14 w-auto brightness-0 invert" />
+              <span className="text-white text-2xl font-semibold tracking-wide">• Sport</span>
             </Link>
             <p className="text-neutral-400 text-sm leading-relaxed mb-6">
               {getText('footer_about')}
