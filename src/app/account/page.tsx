@@ -89,10 +89,17 @@ export default function MyRoomPage() {
     }
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-    await supabase.from('users').update({ avatar_url: publicUrl }).eq('id', user.id);
+    // Add cache buster to force image refresh
+    const avatarWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+    await supabase.from('users').update({ avatar_url: avatarWithCacheBust }).eq('id', user.id);
     toast.success('Avatar updated');
     setAvatarUploading(false);
-    window.location.reload();
+    // Update profile state locally instead of reloading (which logs user out)
+    if (profile) {
+      // Force re-render by updating profile reference
+      Object.assign(profile, { avatar_url: avatarWithCacheBust });
+    }
+    router.refresh();
   };
 
   const handleSaveProfile = async () => {
@@ -195,7 +202,7 @@ export default function MyRoomPage() {
           {[
             { label: 'Orders', value: recentOrders.length, icon: Package, href: '/account/orders', color: 'text-blue-500' },
             { label: 'Wishlist', value: wishlistCount, icon: Heart, href: '/wishlist', color: 'text-red-500' },
-            { label: 'Addresses', value: '—', icon: MapPin, href: '#', color: 'text-green-500' },
+            { label: 'Addresses', value: '—', icon: MapPin, href: '/checkout', color: 'text-green-500' },
             { label: 'Reviews', value: '—', icon: Star, href: '#', color: 'text-purple-500' },
           ].map((stat) => (
             <Link key={stat.label} href={stat.href} className="bg-white border border-neutral-100 rounded-xl p-4 md:p-5 hover:shadow-md transition-all group">

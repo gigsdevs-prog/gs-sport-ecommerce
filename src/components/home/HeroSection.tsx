@@ -130,22 +130,24 @@ export default function HeroSection() {
             >
               {getText('hero_subheadline')}
             </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1 }}
-              className="mt-6 sm:mt-8"
-            >
-              <Link
-                href="/shop"
-                className="inline-block bg-white text-black px-6 sm:px-10 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-500"
-              >
-                {getText('hero_cta')}
-              </Link>
-            </motion.div>
           </motion.div>
         </div>
       </div>
+
+      {/* Shop Now Button — below the banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 1 }}
+        className="absolute bottom-16 left-0 right-0 z-10 flex justify-center"
+      >
+        <Link
+          href="/shop"
+          className="inline-block bg-white text-black px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-500 shadow-lg"
+        >
+          {getText('hero_cta')}
+        </Link>
+      </motion.div>
 
       {/* Banner dots */}
       {banners.length > 1 && (

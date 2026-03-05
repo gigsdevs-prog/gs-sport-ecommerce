@@ -121,12 +121,17 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p className="mt-8 text-center text-sm text-neutral-500">
-          Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="text-black underline hover:no-underline">
-            Create one
+        <div className="mt-8 text-center">
+          <p className="text-sm text-neutral-600 mb-3">
+            Don&apos;t have an account?
+          </p>
+          <Link
+            href="/auth/register"
+            className="inline-block w-full py-3 border-2 border-black text-black text-sm tracking-[0.15em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-300 text-center"
+          >
+            Create an Account
           </Link>
-        </p>
+        </div>
       </motion.div>
     </div>
   );

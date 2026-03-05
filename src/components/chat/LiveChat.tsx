@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Minimize2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import toast from 'react-hot-toast';
 
 const supabase = createClient();
 
@@ -91,7 +92,7 @@ export default function LiveChat() {
 
       if (error) {
         console.error('Chat session create error:', error);
-        // Table likely doesn't exist — silently fail
+        toast.error('Chat is temporarily unavailable. Please try again later.');
         return;
       }
 
@@ -327,8 +328,8 @@ export default function LiveChat() {
 
                 <button
                   onClick={startChat}
-                  disabled={!user && !guestName.trim()}
-                  className="w-full py-2.5 bg-black text-white text-sm tracking-wider uppercase font-medium rounded-lg hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+                  disabled={(!user && !guestName.trim())}
+                  className="w-full py-3 bg-black text-white text-sm tracking-wider uppercase font-medium rounded-lg hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Start Chat
                 </button>
