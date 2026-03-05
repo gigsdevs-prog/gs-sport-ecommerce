@@ -31,14 +31,7 @@ function LoadingIndicator({ progress }: { progress: number }) {
   );
 }
 
-// ---- Detect reduced motion & low perf ----
-function shouldSkipAnimation(): boolean {
-  if (typeof window === 'undefined') return false;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-  return false;
-}
-
-// ---- Check if intro was already shown ----
+// ---- Check if intro was already shown this session ----
 function hasSeenIntro(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -108,9 +101,9 @@ export default function ThreeDWelcome() {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'loading' | 'reveal' | 'text' | 'fadeout'>('loading');
 
-  // Skip animation for returning visitors or low-end devices
+  // Skip animation for returning visitors in this session
   useEffect(() => {
-    if (hasSeenIntro() || shouldSkipAnimation()) {
+    if (hasSeenIntro()) {
       setShow(false);
       return;
     }

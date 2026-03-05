@@ -73,23 +73,19 @@ export default function LiveChat() {
         setChatId(sessionId);
         setHasStarted(true);
 
-        // Load existing messages
+        // Load existing messages via API
         try {
-          const { data, error } = await supabase
-            .from('chat_messages')
-            .select('*')
-            .eq('chat_id', sessionId)
-            .order('created_at', { ascending: true });
+          const res = await fetch(`/api/chat?chat_id=${encodeURIComponent(sessionId)}`);
+          const data = await res.json();
 
-          if (error) {
-            console.error('Chat messages load error:', error);
-            // Table might not exist — clear stale session
+          if (!res.ok || data.error) {
+            console.error('Chat messages load error:', data.error);
             localStorage.removeItem('gs_chat_id');
             setChatId(null);
             setHasStarted(false);
             return;
           }
-          if (data) setMessages(data);
+          if (data.messages) setMessages(data.messages);
         } catch {
           localStorage.removeItem('gs_chat_id');
           setChatId(null);
@@ -98,51 +94,32 @@ export default function LiveChat() {
         return;
       }
 
-      // Create new chat
+      // Create new chat via API
       const newChatId = crypto.randomUUID();
       const senderName = user ? (profile?.full_name || 'Customer') : (guestName || 'Guest');
 
-      const { error } = await supabase.from('chat_sessions').insert({
-        id: newChatId,
-        user_id: user?.id || null,
-        guest_name: senderName,
-        status: 'active',
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_session',
+          id: newChatId,
+          user_id: user?.id || null,
+          guest_name: senderName,
+        }),
       });
+      const data = await res.json();
 
-      if (error) {
-        console.error('Chat session create error:', error.message, error.details, error.hint, error.code);
-        toast.error(error.message || t('chat_unavailable'));
+      if (!res.ok || data.error) {
+        console.error('Chat session create error:', data.error);
+        toast.error(data.error || t('chat_unavailable'));
         return;
       }
 
       localStorage.setItem('gs_chat_id', newChatId);
       setChatId(newChatId);
       setHasStarted(true);
-
-      // Auto welcome message (ignore errors if table missing)
-      try {
-        await supabase.from('chat_messages').insert({
-          chat_id: newChatId,
-          sender_id: 'system',
-          sender_name: 'GS SPORT',
-          message: 'Welcome to GS SPORT! How can we help you today? 👋',
-          is_admin: true,
-        });
-      } catch {
-        // ignore — table might not exist yet
-      }
-
-      try {
-        const { data } = await supabase
-          .from('chat_messages')
-          .select('*')
-          .eq('chat_id', newChatId)
-          .order('created_at', { ascending: true });
-
-        if (data) setMessages(data);
-      } catch {
-        // ignore — messages will appear via realtime
-      }
+      if (data.messages) setMessages(data.messages);
     } catch (err) {
       console.error('startChat error:', err);
     }
@@ -194,20 +171,17 @@ export default function LiveChat() {
 
       (async () => {
         try {
-          const { data, error } = await supabase
-            .from('chat_messages')
-            .select('*')
-            .eq('chat_id', sessionId)
-            .order('created_at', { ascending: true });
+          const res = await fetch(`/api/chat?chat_id=${encodeURIComponent(sessionId)}`);
+          const data = await res.json();
 
-          if (error) {
-            console.error('Chat messages load error:', error);
+          if (!res.ok || data.error) {
+            console.error('Chat messages load error:', data.error);
             localStorage.removeItem('gs_chat_id');
             setChatId(null);
             setHasStarted(false);
             return;
           }
-          if (data) setMessages(data);
+          if (data.messages) setMessages(data.messages);
         } catch {
           localStorage.removeItem('gs_chat_id');
           setChatId(null);
@@ -226,17 +200,23 @@ export default function LiveChat() {
     try {
       const senderName = user ? (profile?.full_name || 'Customer') : (guestName || 'Guest');
 
-      const { error } = await supabase.from('chat_messages').insert({
-        chat_id: chatId,
-        sender_id: user?.id || 'guest',
-        sender_name: senderName,
-        message: msg,
-        is_admin: false,
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_message',
+          chat_id: chatId,
+          sender_id: user?.id || 'guest',
+          sender_name: senderName,
+          message: msg,
+          is_admin: false,
+        }),
       });
+      const data = await res.json();
 
-      if (error) {
-        console.error('Send message error:', error);
-        setInput(msg); // restore input on failure
+      if (!res.ok || data.error) {
+        console.error('Send message error:', data.error);
+        setInput(msg);
       }
     } catch (err) {
       console.error('Send message exception:', err);
