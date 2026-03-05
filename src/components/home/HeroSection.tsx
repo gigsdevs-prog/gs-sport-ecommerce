@@ -70,14 +70,14 @@ export default function HeroSection() {
               <img
                 src={banners[currentBanner].image_url}
                 alt={banners[currentBanner].title || 'Banner'}
-                className="absolute inset-0 w-full h-full object-contain bg-black"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
               <Image
                 src={banners[currentBanner].image_url}
                 alt={banners[currentBanner].title || 'Banner'}
                 fill
-                className="object-contain"
+                className="object-cover"
                 priority
                 sizes="100vw"
                 quality={95}

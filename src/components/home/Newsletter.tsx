@@ -7,11 +7,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import toast from 'react-hot-toast';
 
 export default function Newsletter() {
   const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +49,7 @@ export default function Newsletter() {
                 autoComplete="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('enter_email')}
                 required
                 className="flex-1 px-5 py-4 bg-white border border-neutral-200 text-sm outline-none focus:border-black transition-colors"
               />
@@ -58,12 +60,12 @@ export default function Newsletter() {
                 disabled={loading}
                 className="bg-black text-white px-8 py-4 text-sm tracking-[0.2em] uppercase font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Subscribing...' : 'Subscribe'}
+                {loading ? t('subscribing') : t('subscribe')}
               </motion.button>
             </form>
 
             <p className="mt-4 text-xs text-neutral-400">
-              By subscribing, you agree to our Privacy Policy.
+              {t('subscribe_agree')}
             </p>
           </div>
         </ScrollReveal>

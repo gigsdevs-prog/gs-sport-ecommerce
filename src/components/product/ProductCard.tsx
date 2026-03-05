@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Heart, ShoppingBag } from 'lucide-react';
 import { useWishlistStore } from '@/store/wishlist';
 import { useCartStore } from '@/store/cart';
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatPrice, getDiscountPercentage } from '@/utils';
 import type { Product } from '@/types';
 
@@ -22,6 +23,7 @@ interface ProductCardProps {
 const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { toggleItem, isInWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
+  const { t } = useLanguage();
   const isWishlisted = isInWishlist(product.id);
   const discount = product.compare_at_price
     ? getDiscountPercentage(product.price, product.compare_at_price)
@@ -83,7 +85,7 @@ const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCar
             )}
             {product.best_seller && (
               <span className="bg-black text-white text-[10px] tracking-wider uppercase px-2 py-1 rounded">
-                Best Seller
+                {t('best_seller')}
               </span>
             )}
           </div>
@@ -111,7 +113,7 @@ const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCar
               onClick={handleQuickAdd}
               className="w-full bg-white/95 backdrop-blur-sm text-black py-3 text-xs tracking-widest uppercase font-medium hover:bg-black hover:text-white transition-all duration-300 rounded"
             >
-              Quick Add
+              {t('quick_add')}
             </button>
           </motion.div>
         </div>

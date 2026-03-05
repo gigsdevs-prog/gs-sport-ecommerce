@@ -159,7 +159,7 @@ export default function CategoriesGrid() {
                         src={displayImage}
                         alt={category.name}
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         sizes="(max-width: 768px) 50vw, 25vw"
                         loading="lazy"
                         quality={85}

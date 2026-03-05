@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { SiteContentProvider } from '@/hooks/SiteContentProvider';
+import { LanguageProvider } from '@/hooks/useLanguage';
 import './globals.css';
 
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), {
@@ -57,6 +58,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://nsupmxkzcwgdzyloyzog.supabase.co" />
       </head>
       <body className="font-sans antialiased bg-white text-neutral-900">
+        <LanguageProvider>
         <SiteContentProvider>
           <Header />
           <CartDrawer />
@@ -64,6 +66,7 @@ export default function RootLayout({
           <Footer />
           <LiveChat />
         </SiteContentProvider>
+        </LanguageProvider>
         <Toaster
           position="bottom-right"
           toastOptions={{

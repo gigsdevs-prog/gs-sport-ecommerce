@@ -14,6 +14,7 @@ import { Search, ShoppingBag, User, Heart, Menu, X, Settings } from 'lucide-reac
 import { useCartStore } from '@/store/cart';
 import { useAuth } from '@/hooks/useAuth';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage, LanguageSelector } from '@/hooks/useLanguage';
 import { NAV_LINKS } from '@/lib/constants';
 
 const TOP_BAR_MESSAGES = [
@@ -33,6 +34,7 @@ export default function Header() {
   const { openCart, getItemCount } = useCartStore();
   const { user, isAdmin } = useAuth();
   const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const logoUrl = getText('site_logo_url') || '/logo.png';
   const itemCount = getItemCount();
 
@@ -71,19 +73,23 @@ export default function Header() {
         {/* Top bar — animated rotating messages */}
         <div className="border-b border-neutral-100 bg-neutral-950 text-white overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center h-9 relative">
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={topBarIndex}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="text-[10px] sm:text-xs tracking-[0.25em] uppercase font-light absolute"
-                >
-                  {TOP_BAR_MESSAGES[topBarIndex]}
-                </motion.span>
-              </AnimatePresence>
+            <div className="flex items-center justify-between h-9 relative">
+              <div className="w-16" />
+              <div className="flex-1 flex justify-center relative">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={topBarIndex}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className="text-[10px] sm:text-xs tracking-[0.25em] uppercase font-light absolute"
+                  >
+                    {TOP_BAR_MESSAGES[topBarIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+              <LanguageSelector />
             </div>
           </div>
         </div>
@@ -110,7 +116,7 @@ export default function Header() {
                     href={link.href}
                     className="px-2.5 py-1.5 text-[11px] tracking-[0.15em] uppercase text-neutral-600 hover:text-black transition-colors font-medium"
                   >
-                    {link.label}
+                    {t(link.label.toLowerCase()) || link.label}
                   </Link>
                 ))}
               </nav>
@@ -199,7 +205,7 @@ export default function Header() {
           >
             <div className="w-full max-w-2xl px-4">
               <div className="flex items-center justify-between mb-8">
-                <span className="text-sm tracking-widest uppercase text-neutral-500">Search</span>
+                <span className="text-sm tracking-widest uppercase text-neutral-500">{t('search')}</span>
                 <button
                   onClick={() => setSearchOpen(false)}
                   className="p-2 text-neutral-500 hover:text-black"
@@ -215,7 +221,7 @@ export default function Header() {
                   autoComplete="off"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="What are you looking for?"
+                  placeholder={t('search_placeholder')}
                   autoFocus
                   className="w-full text-3xl lg:text-4xl font-light border-b-2 border-neutral-200 focus:border-black pb-4 outline-none transition-colors bg-transparent placeholder:text-neutral-300"
                 />
@@ -268,7 +274,7 @@ export default function Header() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
                     >
-                      {link.label}
+                      {t(link.label.toLowerCase()) || link.label}
                     </Link>
                   </motion.div>
                 ))}
@@ -283,14 +289,14 @@ export default function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
                   >
-                    {user ? 'My Account' : 'Sign In'}
+                    {user ? t('my_account') : t('sign_in')}
                   </Link>
                   <Link
                     href="/wishlist"
                     onClick={() => setMobileMenuOpen(false)}
                     className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
                   >
-                    Wishlist
+                    {t('wishlist')}
                   </Link>
                   {isAdmin && (
                     <Link
@@ -298,7 +304,7 @@ export default function Header() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="block py-3 text-sm tracking-widest uppercase text-neutral-600 hover:text-black hover:pl-2 transition-all duration-300 border-b border-neutral-50"
                     >
-                      Admin Panel
+                      {t('admin_panel')}
                     </Link>
                   )}
                 </motion.div>

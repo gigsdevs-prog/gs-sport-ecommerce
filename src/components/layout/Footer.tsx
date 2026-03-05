@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_NAME } from '@/lib/constants';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase/client';
 import { Phone } from 'lucide-react';
 import type { AboutPage } from '@/types';
@@ -41,30 +42,31 @@ const supabase = createClient();
 
 const footerLinks = {
   shop: [
-    { label: 'Men', href: '/shop?category=men' },
-    { label: 'Women', href: '/shop?category=women' },
-    { label: 'Accessories', href: '/shop?category=accessories' },
-    { label: 'Shoes', href: '/shop?category=shoes' },
-    { label: 'New Arrivals', href: '/shop' },
-    { label: 'Sale', href: '/shop?sale=true' },
+    { key: 'men', href: '/shop?category=men' },
+    { key: 'women', href: '/shop?category=women' },
+    { key: 'accessories', href: '/shop?category=accessories' },
+    { key: 'shoes', href: '/shop?category=shoes' },
+    { key: 'new_arrivals', href: '/shop' },
+    { key: 'sale', href: '/shop?sale=true' },
   ],
   help: [
-    { label: 'Contact Us', href: '/contact' },
-    { label: 'Shipping & Returns', href: '/shipping' },
-    { label: 'Size Guide', href: '/size-guide' },
-    { label: 'FAQ', href: '/faq' },
-    { label: 'Track Order', href: '/account/orders' },
+    { key: 'contact_us', href: '/contact' },
+    { key: 'shipping_returns', href: '/shipping' },
+    { key: 'size_guide', href: '/size-guide' },
+    { key: 'faq', href: '/faq' },
+    { key: 'track_order', href: '/account/orders' },
   ],
   company: [
-    { label: 'About Us', href: '/about' },
-    { label: 'Careers', href: '/careers' },
-    { label: 'Privacy Policy', href: '/privacy' },
-    { label: 'Terms of Service', href: '/terms' },
+    { key: 'about_us', href: '/about' },
+    { key: 'careers', href: '/careers' },
+    { key: 'privacy_policy', href: '/privacy' },
+    { key: 'terms_of_service', href: '/terms' },
   ],
 };
 
 export default function Footer() {
   const { getText } = useSiteContent();
+  const { t } = useLanguage();
   const logoUrl = getText('site_logo_url') || '/logo.png';
   const [about, setAbout] = useState<AboutPage | null>(null);
 
@@ -98,7 +100,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-6">
               <Image src={logoUrl} alt="GS SPORT" width={200} height={200} className="h-14 w-auto brightness-0 invert" />
-              <span className="text-white text-2xl font-semibold tracking-wide">• Sport</span>
+              <span className="text-white text-xl font-semibold tracking-wide -ml-1">• Sport</span>
             </Link>
             <p className="text-neutral-400 text-sm leading-relaxed mb-6">
               {getText('footer_about')}
@@ -130,12 +132,12 @@ export default function Footer() {
 
           {/* Shop */}
           <div>
-            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">Shop</h3>
+            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">{t('shop')}</h3>
             <ul className="space-y-3">
               {footerLinks.shop.map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-neutral-400 hover:text-white transition-colors duration-300">
-                    {link.label}
+                    {t(link.key)}
                   </Link>
                 </li>
               ))}
@@ -144,12 +146,12 @@ export default function Footer() {
 
           {/* Help */}
           <div>
-            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">Help</h3>
+            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">{t('help')}</h3>
             <ul className="space-y-3">
               {footerLinks.help.map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-neutral-400 hover:text-white transition-colors duration-300">
-                    {link.label}
+                    {t(link.key)}
                   </Link>
                 </li>
               ))}
@@ -158,12 +160,12 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">Company</h3>
+            <h3 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">{t('company')}</h3>
             <ul className="space-y-3">
               {footerLinks.company.map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-neutral-400 hover:text-white transition-colors duration-300">
-                    {link.label}
+                    {t(link.key)}
                   </Link>
                 </li>
               ))}
@@ -175,9 +177,9 @@ export default function Footer() {
         <div className="mt-16 pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <p>&copy; {new Date().getFullYear()} {SITE_NAME}. {getText('footer_copyright')}</p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="/cookies" className="hover:text-white transition-colors">Cookies</Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">{t('privacy')}</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">{t('terms')}</Link>
+            <Link href="/cookies" className="hover:text-white transition-colors">{t('cookies')}</Link>
           </div>
         </div>
       </div>

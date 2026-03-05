@@ -35,8 +35,6 @@ function LoadingIndicator({ progress }: { progress: number }) {
 function shouldSkipAnimation(): boolean {
   if (typeof window === 'undefined') return false;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) return true;
-  if ((navigator as typeof navigator & { deviceMemory?: number }).deviceMemory && (navigator as typeof navigator & { deviceMemory?: number }).deviceMemory! < 4) return true;
   return false;
 }
 
