@@ -110,8 +110,8 @@ export default function LiveChat() {
       });
 
       if (error) {
-        console.error('Chat session create error:', error);
-        toast.error(t('chat_unavailable'));
+        console.error('Chat session create error:', error.message, error.details, error.hint, error.code);
+        toast.error(error.message || t('chat_unavailable'));
         return;
       }
 
