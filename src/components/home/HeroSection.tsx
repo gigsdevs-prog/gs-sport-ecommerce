@@ -155,7 +155,7 @@ export default function HeroSection() {
     <div className="flex justify-center py-6 bg-white">
       <Link
         href="/shop"
-        className="inline-block bg-white text-black px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium border border-neutral-200 hover:bg-black hover:text-white hover:border-black transition-all duration-500"
+        className="inline-block bg-black text-white px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium border border-black hover:bg-white hover:text-black transition-all duration-500"
       >
         {getText('hero_cta')}
       </Link>
