@@ -91,6 +91,7 @@ const translations: Record<Lang, Record<string, string>> = {
     your_name: 'Your name',
     type_message: 'Type a message...',
     chat_unavailable: 'Chat is temporarily unavailable. Please try again later.',
+    chat_session_expired: 'Chat session expired. Please start a new chat.',
     live_chat_support: 'Live Chat Support',
     // Account
     my_orders: 'My Orders',
@@ -259,6 +260,7 @@ const translations: Record<Lang, Record<string, string>> = {
     your_name: 'თქვენი სახელი',
     type_message: 'დაწერეთ შეტყობინება...',
     chat_unavailable: 'ჩატი დროებით მიუწვდომელია. სცადეთ მოგვიანებით.',
+    chat_session_expired: 'ჩატის სესია ამოიწურა. დაიწყეთ ახალი ჩატი.',
     live_chat_support: 'პირდაპირი ჩატი',
     // Account
     my_orders: 'ჩემი შეკვეთები',
@@ -427,6 +429,7 @@ const translations: Record<Lang, Record<string, string>> = {
     your_name: 'Ваше имя',
     type_message: 'Введите сообщение...',
     chat_unavailable: 'Чат временно недоступен. Попробуйте позже.',
+    chat_session_expired: 'Сессия чата истекла. Начните новый чат.',
     live_chat_support: 'Чат поддержки',
     // Account
     my_orders: 'Мои заказы',

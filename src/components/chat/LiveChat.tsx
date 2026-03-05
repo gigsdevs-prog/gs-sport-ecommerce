@@ -192,9 +192,19 @@ export default function LiveChat() {
 
       if (!res.ok || data.error) {
         console.error('Send message error:', data.error);
-        setInput(msg);
         // Remove optimistic message on failure
         setMessages(prev => prev.filter(m => m.id !== optimisticId));
+
+        // If session was deleted by admin, auto-recreate
+        if (res.status === 404 || data.error === 'session_deleted') {
+          localStorage.removeItem('gs_chat_id');
+          setChatId(null);
+          setMessages([]);
+          setHasStarted(false);
+          toast.error(t('chat_session_expired') || 'Chat session expired. Please start a new chat.');
+        } else {
+          setInput(msg);
+        }
       }
     } catch (err) {
       console.error('Send message exception:', err);

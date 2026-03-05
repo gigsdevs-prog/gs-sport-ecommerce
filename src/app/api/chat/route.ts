@@ -13,6 +13,12 @@ export async function POST(request: Request) {
     const { action } = body;
     const supabase = createAdminSupabaseClient();
 
+    // Verify session exists helper
+    const sessionExists = async (id: string) => {
+      const { data } = await supabase.from('chat_sessions').select('id').eq('id', id).single();
+      return !!data;
+    };
+
     if (action === 'create_session') {
       const { id, user_id, guest_name } = body;
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -52,6 +58,11 @@ export async function POST(request: Request) {
       const { chat_id, sender_id, sender_name, message, is_admin } = body;
       if (!chat_id || !message) {
         return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+      }
+
+      // Check if session still exists (may have been deleted by admin)
+      if (!(await sessionExists(chat_id))) {
+        return NextResponse.json({ error: 'session_deleted' }, { status: 404 });
       }
 
       const { error } = await supabase.from('chat_messages').insert({
@@ -119,6 +130,18 @@ export async function GET(request: Request) {
     }
 
     const supabase = createAdminSupabaseClient();
+
+    // Verify session exists
+    const { data: session } = await supabase
+      .from('chat_sessions')
+      .select('id')
+      .eq('id', chatId)
+      .single();
+
+    if (!session) {
+      return NextResponse.json({ error: 'session_deleted', messages: [] }, { status: 404 });
+    }
+
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
