@@ -64,7 +64,7 @@ async function fetchSiteContent(): Promise<Record<string, string>> {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         return await fetchOnce();
-      } catch (err) {
+      } catch {
         if (attempt < MAX_RETRIES) {
           console.warn(`Site content fetch attempt ${attempt} failed, retrying...`);
         } else {
