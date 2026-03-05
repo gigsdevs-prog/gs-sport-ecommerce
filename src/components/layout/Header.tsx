@@ -210,6 +210,9 @@ export default function Header() {
               <form onSubmit={handleSearch}>
                 <input
                   type="text"
+                  id="search-input"
+                  name="search"
+                  autoComplete="off"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="What are you looking for?"

@@ -52,7 +52,7 @@ const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCar
               src={product.images[0]}
               alt={product.name}
               fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-contain transition-transform duration-700 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               loading={index < 4 ? 'eager' : 'lazy'}
             />
@@ -68,7 +68,7 @@ const ProductCard = memo(function ProductCard({ product, index = 0 }: ProductCar
               src={product.images[1]}
               alt={product.name}
               fill
-              className="object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+              className="object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-700"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               loading="lazy"
             />

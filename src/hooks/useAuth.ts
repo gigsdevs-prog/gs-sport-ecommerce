@@ -14,8 +14,7 @@ import type { User } from '@supabase/supabase-js';
 // Module-level singleton — always same reference
 const supabase = createClient();
 
-const AUTH_TIMEOUT_MS = 10_000;
-const SESSION_TIMEOUT_MS = 5_000;
+const SESSION_TIMEOUT_MS = 3_000;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -85,14 +84,6 @@ export function useAuth() {
   useEffect(() => {
     mounted.current = true;
 
-    // Safety timeout: ensure loading finishes even if auth hangs
-    const timeout = setTimeout(() => {
-      if (mounted.current) {
-        console.warn('useAuth: safety timeout reached, forcing loading=false');
-        setLoading(false);
-      }
-    }, AUTH_TIMEOUT_MS);
-
     const getUser = async () => {
       try {
         // Use getSession() first — it reads from local cache and is instant.
@@ -134,7 +125,6 @@ export function useAuth() {
 
     return () => {
       mounted.current = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [fetchProfile]);

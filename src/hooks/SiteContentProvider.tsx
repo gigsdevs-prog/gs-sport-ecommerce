@@ -27,8 +27,7 @@ const SiteContentContext = createContext<SiteContentContextValue>({
   refresh: async () => {},
 });
 
-const FETCH_TIMEOUT_MS = 20_000;
-const MAX_RETRIES = 2;
+const FETCH_TIMEOUT_MS = 5_000;
 
 // Deduplicate concurrent fetches (race-safe)
 let fetchPromise: Promise<Record<string, string>> | null = null;
@@ -60,21 +59,7 @@ async function fetchOnce(): Promise<Record<string, string>> {
 async function fetchSiteContent(): Promise<Record<string, string>> {
   if (fetchPromise) return fetchPromise;
 
-  const promise = (async () => {
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        return await fetchOnce();
-      } catch {
-        if (attempt < MAX_RETRIES) {
-          console.warn(`Site content fetch attempt ${attempt} failed, retrying...`);
-        } else {
-          console.warn('Site content fetch failed after retries, using defaults');
-          return { ...DEFAULT_CONTENT };
-        }
-      }
-    }
-    return { ...DEFAULT_CONTENT };
-  })();
+  const promise = fetchOnce().catch(() => ({ ...DEFAULT_CONTENT }));
 
   fetchPromise = promise;
 

@@ -70,22 +70,23 @@ export default function PromoBanner() {
                 </motion.p>
               </div>
             </div>
-            {/* CTA below the banner content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="pb-10"
-            >
-              <Link
-                href="/shop"
-                className="inline-block bg-white text-black px-10 py-4 text-sm tracking-[0.2em] uppercase font-medium hover:bg-neutral-200 transition-colors duration-300"
-              >
-                {getText('promo_cta')}
-              </Link>
-            </motion.div>
           </div>
+
+          {/* CTA below the banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="flex justify-center mt-8"
+          >
+            <Link
+              href="/shop"
+              className="inline-block bg-black text-white px-10 py-4 text-sm tracking-[0.2em] uppercase font-medium hover:bg-neutral-800 transition-colors duration-300"
+            >
+              {getText('promo_cta')}
+            </Link>
+          </motion.div>
         </ScrollReveal>
       </div>
     </section>

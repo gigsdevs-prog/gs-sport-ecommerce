@@ -254,7 +254,7 @@ export default function MyRoomPage() {
             {[
               { href: '/account/orders', label: 'My Orders', icon: Package, desc: 'Track and manage orders' },
               { href: '/wishlist', label: 'Wishlist', icon: Heart, desc: 'Saved products' },
-              { href: '/account/profile', label: 'Edit Profile', icon: User, desc: 'Update your info' },
+              { href: '/account', label: 'Edit Profile', icon: User, desc: 'Update your info' },
             ].map(link => (
               <Link key={link.href} href={link.href} className="flex items-center justify-between p-4 bg-white border border-neutral-100 rounded-xl hover:shadow-md transition-all group">
                 <div className="flex items-center gap-3">

@@ -53,6 +53,7 @@ export default function HeroSection() {
   }, [banners.length]);
 
   return (
+    <>
     <section className="relative h-[70vh] sm:h-[80vh] lg:h-[90vh] overflow-hidden bg-neutral-100">
       {/* Background Image */}
       <AnimatePresence mode="wait">
@@ -134,21 +135,6 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Shop Now Button — below the banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1 }}
-        className="absolute bottom-16 left-0 right-0 z-10 flex justify-center"
-      >
-        <Link
-          href="/shop"
-          className="inline-block bg-white text-black px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-500 shadow-lg"
-        >
-          {getText('hero_cta')}
-        </Link>
-      </motion.div>
-
       {/* Banner dots */}
       {banners.length > 1 && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3">
@@ -164,5 +150,16 @@ export default function HeroSection() {
         </div>
       )}
     </section>
+
+    {/* Shop Now Button — below the banner */}
+    <div className="flex justify-center py-6 bg-white">
+      <Link
+        href="/shop"
+        className="inline-block bg-white text-black px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm tracking-[0.2em] uppercase font-medium border border-neutral-200 hover:bg-black hover:text-white hover:border-black transition-all duration-500"
+      >
+        {getText('hero_cta')}
+      </Link>
+    </div>
+    </>
   );
 }

@@ -319,6 +319,9 @@ export default function LiveChat() {
                 {!user && (
                   <input
                     type="text"
+                    id="chat-guest-name"
+                    name="guest-name"
+                    autoComplete="name"
                     placeholder="Your name"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
