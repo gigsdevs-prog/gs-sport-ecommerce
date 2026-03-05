@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { SiteContentProvider } from '@/hooks/SiteContentProvider';
 import { LanguageProvider } from '@/hooks/useLanguage';
+import NavigationWrapper from '@/components/layout/NavigationWrapper';
 import './globals.css';
 
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), {
@@ -62,7 +63,7 @@ export default function RootLayout({
         <SiteContentProvider>
           <Header />
           <CartDrawer />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen"><NavigationWrapper>{children}</NavigationWrapper></main>
           <Footer />
           <LiveChat />
         </SiteContentProvider>

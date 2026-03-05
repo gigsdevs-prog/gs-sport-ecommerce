@@ -36,6 +36,10 @@ const nextConfig = {
   reactStrictMode: false,
 
   experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
     optimizePackageImports: ['lucide-react', 'framer-motion', '@react-three/drei', '@react-three/fiber'],
   },
 
