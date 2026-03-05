@@ -119,6 +119,15 @@ export default function LiveChat() {
     const pollInterval = setInterval(async () => {
       try {
         const res = await fetch(`/api/chat?chat_id=${encodeURIComponent(chatId)}`);
+        if (res.status === 404) {
+          // Session was deleted by admin — stop polling, clear state
+          clearInterval(pollInterval);
+          localStorage.removeItem('gs_chat_id');
+          setChatId(null);
+          setMessages([]);
+          setHasStarted(false);
+          return;
+        }
         if (!res.ok) return;
         const data = await res.json();
         if (data.messages) {
