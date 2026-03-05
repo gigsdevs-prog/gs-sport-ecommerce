@@ -217,6 +217,13 @@ export default function LiveChat() {
       if (!res.ok || data.error) {
         console.error('Send message error:', data.error);
         setInput(msg);
+      } else {
+        // Fetch latest messages after sending
+        const fetchRes = await fetch(`/api/chat?chat_id=${encodeURIComponent(chatId)}`);
+        const fetchData = await fetchRes.json();
+        if (fetchRes.ok && fetchData.messages) {
+          setMessages(fetchData.messages);
+        }
       }
     } catch (err) {
       console.error('Send message exception:', err);
