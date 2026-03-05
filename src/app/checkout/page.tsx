@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Lock, Banknote, CreditCard, Check } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
+import { useLanguage } from '@/hooks/useLanguage';
 import { shippingSchema, type ShippingFormData } from '@/lib/validations';
 import { formatPrice } from '@/utils';
 import Input from '@/components/ui/Input';
@@ -23,13 +24,13 @@ type PaymentMethod = 'cash' | 'card';
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotal, clearCart } = useCartStore();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
 
   const subtotal = getTotal();
-  const shipping = subtotal >= 100 ? 0 : 9.99;
-  const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
+  const shipping = subtotal >= 55 ? 0 : 5;
+  const total = subtotal + shipping;
 
   const { register, handleSubmit, formState: { errors } } = useForm<ShippingFormData>({
     resolver: zodResolver(shippingSchema),
@@ -60,7 +61,7 @@ export default function CheckoutPage() {
           shipping_address: shippingData,
           subtotal,
           shipping,
-          tax,
+          tax: 0,
           total,
         }),
       });
@@ -97,7 +98,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-      <h1 className="text-3xl font-light tracking-wide mb-10">Checkout</h1>
+      <h1 className="text-3xl font-light tracking-wide mb-10">{t('checkout_title')}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Shipping Form */}
@@ -107,60 +108,60 @@ export default function CheckoutPage() {
           className="lg:col-span-7"
         >
           <h2 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">
-            Shipping Information
+            {t('shipping_info')}
           </h2>
 
           <form onSubmit={handleSubmit(onSubmit)} id="checkout-form" className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="First Name"
+                label={t('first_name')}
                 placeholder="John"
                 error={errors.firstName?.message}
                 {...register('firstName')}
               />
               <Input
-                label="Last Name"
+                label={t('last_name')}
                 placeholder="Doe"
                 error={errors.lastName?.message}
                 {...register('lastName')}
               />
             </div>
             <Input
-              label="Address"
+              label={t('address')}
               placeholder="123 Main St"
               error={errors.address?.message}
               {...register('address')}
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="City"
-                placeholder="New York"
+                label={t('city')}
+                placeholder="Tbilisi"
                 error={errors.city?.message}
                 {...register('city')}
               />
               <Input
-                label="State"
-                placeholder="NY"
+                label={t('state')}
+                placeholder="Region"
                 error={errors.state?.message}
                 {...register('state')}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="ZIP Code"
-                placeholder="10001"
+                label={t('zip')}
+                placeholder="0100"
                 error={errors.zip?.message}
                 {...register('zip')}
               />
               <Input
-                label="Country"
-                placeholder="United States"
+                label={t('country')}
+                placeholder="Georgia"
                 error={errors.country?.message}
                 {...register('country')}
               />
             </div>
             <Input
-              label="Phone"
+              label={t('phone')}
               type="tel"
               placeholder="+995 5XX XXX XXX"
               error={errors.phone?.message}
@@ -171,7 +172,7 @@ export default function CheckoutPage() {
           {/* Payment Method */}
           <div className="mt-8">
             <h2 className="text-xs tracking-[0.2em] uppercase font-semibold mb-4">
-              Payment Method
+              {t('payment_method')}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -190,9 +191,9 @@ export default function CheckoutPage() {
                 )}
                 <Banknote size={28} className={paymentMethod === 'cash' ? 'text-black' : 'text-neutral-400'} />
                 <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-black' : 'text-neutral-500'}`}>
-                  Cash on Delivery
+                  {t('cash_on_delivery')}
                 </span>
-                <span className="text-xs text-neutral-400">Pay when you receive</span>
+                <span className="text-xs text-neutral-400">{t('pay_when_receive')}</span>
               </button>
 
               <button
@@ -211,7 +212,7 @@ export default function CheckoutPage() {
                 )}
                 <CreditCard size={28} className={paymentMethod === 'card' ? 'text-black' : 'text-neutral-400'} />
                 <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-black' : 'text-neutral-500'}`}>
-                  Pay by Card
+                  {t('card_payment')}
                 </span>
                 <span className="text-xs text-neutral-400">Visa / Mastercard</span>
               </button>
@@ -227,7 +228,7 @@ export default function CheckoutPage() {
         >
           <div className="bg-neutral-50 p-6 lg:p-8 sticky top-32">
             <h2 className="text-xs tracking-[0.2em] uppercase font-semibold mb-6">
-              Order Summary
+              {t('order_summary')}
             </h2>
 
             <div className="space-y-4 mb-6">
@@ -266,19 +267,15 @@ export default function CheckoutPage() {
 
             <div className="border-t border-neutral-200 pt-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Subtotal</span>
+                <span className="text-neutral-500">{t('subtotal')}</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Shipping</span>
-                <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Tax</span>
-                <span>{formatPrice(tax)}</span>
+                <span className="text-neutral-500">{t('shipping_label')}</span>
+                <span>{shipping === 0 ? t('free') : formatPrice(shipping)}</span>
               </div>
               <div className="flex justify-between text-base font-semibold pt-3 border-t border-neutral-200">
-                <span>Total</span>
+                <span>{t('total')}</span>
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
@@ -294,12 +291,12 @@ export default function CheckoutPage() {
               {paymentMethod === 'card' ? (
                 <>
                   <CreditCard size={16} />
-                  Pay {formatPrice(total)}
+                  {t('pay')} {formatPrice(total)}
                 </>
               ) : (
                 <>
                   <Banknote size={16} />
-                  Place Order — {formatPrice(total)}
+                  {t('place_order')} — {formatPrice(total)}
                 </>
               )}
             </Button>
@@ -308,15 +305,23 @@ export default function CheckoutPage() {
               {paymentMethod === 'card' ? (
                 <>
                   <Lock size={12} />
-                  Secure payment via Bank of Georgia
+                  {t('secure_bank_payment')}
                 </>
               ) : (
                 <>
                   <Banknote size={12} />
-                  Pay with cash when your order arrives
+                  {t('pay_when_receive')}
                 </>
               )}
             </p>
+
+            {/* Delivery Info */}
+            <div className="mt-5 p-4 bg-white rounded-xl border border-neutral-200 text-center space-y-1">
+              <p className="text-sm text-neutral-600">{t('delivery_days')}</p>
+              <p className="text-xs text-neutral-400">
+                {subtotal >= 55 ? t('free_shipping_threshold') : t('shipping_fee_notice')}
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>

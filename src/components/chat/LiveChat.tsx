@@ -81,7 +81,7 @@ export default function LiveChat() {
     }
   }, [user, profile, guestName, t]);
 
-  // Subscribe to realtime messages
+  // Subscribe to realtime messages + polling fallback
   useEffect(() => {
     if (!chatId) return;
 
@@ -98,9 +98,7 @@ export default function LiveChat() {
         (payload) => {
           const newMsg = payload.new as ChatMessage;
           setMessages(prev => {
-            // Deduplicate: skip if already present by real id
             if (prev.some(m => m.id === newMsg.id)) return prev;
-            // Replace optimistic messages with same content from server
             const hasOptimistic = prev.some(m => m.id.startsWith('opt_') && m.message === newMsg.message && !m.is_admin && !newMsg.is_admin);
             if (hasOptimistic) {
               return prev.map(m =>
@@ -117,8 +115,41 @@ export default function LiveChat() {
       )
       .subscribe();
 
+    // Polling fallback: fetch messages every 5s in case Realtime isn't configured
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/chat?chat_id=${encodeURIComponent(chatId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.messages) {
+          setMessages(prev => {
+            const existingIds = new Set(prev.filter(m => !m.id.startsWith('opt_')).map(m => m.id));
+            const newMsgs = data.messages.filter((m: ChatMessage) => !existingIds.has(m.id));
+            if (newMsgs.length === 0) return prev;
+            // Replace any optimistic messages matched by content
+            let updated = [...prev];
+            for (const serverMsg of newMsgs) {
+              const optIdx = updated.findIndex(m => m.id.startsWith('opt_') && m.message === serverMsg.message && !m.is_admin && !serverMsg.is_admin);
+              if (optIdx >= 0) {
+                updated = updated.map((m, i) => i === optIdx ? serverMsg : m);
+              } else {
+                updated = [...updated, serverMsg];
+              }
+            }
+            // Count new admin messages for unread badge
+            if (!isOpen) {
+              const newAdminCount = newMsgs.filter((m: ChatMessage) => m.is_admin).length;
+              if (newAdminCount > 0) setUnreadCount(c => c + newAdminCount);
+            }
+            return updated;
+          });
+        }
+      } catch { /* ignore poll errors */ }
+    }, 5000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [chatId, isOpen]);
 
