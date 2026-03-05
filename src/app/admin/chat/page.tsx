@@ -7,7 +7,31 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Send, User, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { MessageCircle, Send, User, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+  // Delete a chat session and its messages
+  const deleteSession = async (chatId: string) => {
+    if (!window.confirm('Are you sure you want to delete this chat and all its messages?')) return;
+    try {
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('id', chatId);
+      if (error) {
+        console.error('Delete session error:', error);
+        toast.error('Failed to delete chat');
+        return;
+      }
+      toast.success('Chat deleted');
+      if (selectedChat === chatId) {
+        setSelectedChat(null);
+        setMessages([]);
+      }
+      fetchSessions();
+    } catch (err) {
+      console.error('Delete session exception:', err);
+      toast.error('Failed to delete chat');
+    }
+  };
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
@@ -241,28 +265,34 @@ export default function AdminChatPage() {
               </div>
             ) : (
               sessions.map(session => (
-                <button
-                  key={session.id}
-                  onClick={() => loadMessages(session.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-neutral-50 hover:bg-neutral-50 transition-colors ${
-                    selectedChat === session.id ? 'bg-neutral-50' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${session.status === 'active' ? 'bg-green-400' : 'bg-neutral-300'}`} />
-                      <span className="text-sm font-medium truncate max-w-[160px]">
-                        {session.guest_name || 'Customer'}
+                <div key={session.id} className={`group flex items-center justify-between px-4 py-3 border-b border-neutral-50 hover:bg-neutral-50 transition-colors ${selectedChat === session.id ? 'bg-neutral-50' : ''}`}>
+                  <button
+                    onClick={() => loadMessages(session.id)}
+                    className="flex-1 text-left focus:outline-none"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${session.status === 'active' ? 'bg-green-400' : 'bg-neutral-300'}`} />
+                        <span className="text-sm font-medium truncate max-w-[120px]">
+                          {session.guest_name || 'Customer'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-neutral-400">
+                        {formatTime(session.updated_at)}
                       </span>
                     </div>
-                    <span className="text-[10px] text-neutral-400">
-                      {formatTime(session.updated_at)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-400 truncate">
-                    {session.status === 'active' ? 'Active' : 'Closed'}
-                  </p>
-                </button>
+                    <p className="text-xs text-neutral-400 truncate">
+                      {session.status === 'active' ? 'Active' : 'Closed'}
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => deleteSession(session.id)}
+                    className="ml-2 p-1.5 text-neutral-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete chat"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               ))
             )}
           </div>
