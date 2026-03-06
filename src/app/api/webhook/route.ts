@@ -41,8 +41,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
 
-      // Skip if already processed
-      if (order.status === 'pending' || order.status === 'processing') {
+      // Skip if already processed (only process orders still awaiting payment)
+      if (order.status !== 'awaiting_payment') {
         return NextResponse.json({ received: true });
       }
 
@@ -55,18 +55,22 @@ export async function POST(request: Request) {
         })
         .eq('id', order.id);
 
-      // Get order items and update stock
+      // Decrease stock now that payment is confirmed
       const { data: orderItems } = await supabase
         .from('order_items')
-        .select('*')
+        .select('product_id, quantity')
         .eq('order_id', order.id);
 
       if (orderItems) {
         for (const item of orderItems) {
-          await supabase.rpc('decrease_stock', {
-            p_product_id: item.product_id,
-            p_quantity: item.quantity,
-          });
+          try {
+            await supabase.rpc('decrease_stock', {
+              p_product_id: item.product_id,
+              p_quantity: item.quantity,
+            });
+          } catch (stockErr) {
+            console.error('Stock decrease failed (non-fatal):', stockErr);
+          }
         }
       }
     } else if (paymentStatus === 'REJECTED' || paymentStatus === 'ERROR') {

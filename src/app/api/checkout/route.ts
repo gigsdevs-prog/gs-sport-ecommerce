@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       .from('orders')
       .insert({
         user_id: user?.id || null,
-        status: 'pending',
+        status: isCash ? 'pending' : 'awaiting_payment',
         payment_method: isCash ? 'cash' : 'card',
         total,
         subtotal,
@@ -53,20 +53,18 @@ export async function POST(request: Request) {
     }));
     await adminClient.from('order_items').insert(orderItems);
 
-    // Update stock for all orders
-    for (const item of items) {
-      try {
-        await adminClient.rpc('decrease_stock', {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity,
-        });
-      } catch (stockErr) {
-        console.error('Stock decrease failed (non-fatal):', stockErr);
-      }
-    }
-
-    // Cash on delivery — order is placed immediately
+    // Cash on delivery — decrease stock and confirm immediately
     if (isCash) {
+      for (const item of items) {
+        try {
+          await adminClient.rpc('decrease_stock', {
+            p_product_id: item.product_id,
+            p_quantity: item.quantity,
+          });
+        } catch (stockErr) {
+          console.error('Stock decrease failed (non-fatal):', stockErr);
+        }
+      }
       return NextResponse.json({ success: true, order_id: order.id });
     }
 

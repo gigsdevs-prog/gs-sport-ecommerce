@@ -100,7 +100,7 @@ export async function createPaymentOrder(params: {
   const token = await getAccessToken();
   const { shopOrderId, amount, currency = 'GEL', items, locale = 'ka' } = params;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gssport.ge';
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gssport.ge').trim();
 
   const orderRequest: IPayOrderRequest = {
     intent: 'CAPTURE',
