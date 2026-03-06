@@ -78,8 +78,9 @@ export default function CheckoutPage() {
       } else {
         throw new Error(data.error || 'Failed to place order');
       }
-    } catch {
-      toast.error('Something went wrong. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      toast.error(msg);
       setLoading(false);
     }
   };
@@ -144,20 +145,6 @@ export default function CheckoutPage() {
                 placeholder="Region"
                 error={errors.state?.message}
                 {...register('state')}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={t('zip')}
-                placeholder="0100"
-                error={errors.zip?.message}
-                {...register('zip')}
-              />
-              <Input
-                label={t('country')}
-                placeholder="Georgia"
-                error={errors.country?.message}
-                {...register('country')}
               />
             </div>
             <Input

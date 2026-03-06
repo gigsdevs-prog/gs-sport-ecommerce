@@ -21,8 +21,6 @@ interface SavedAddress {
   address: string;
   city: string;
   state: string;
-  zip: string;
-  country: string;
   phone: string;
   isDefault: boolean;
 }
@@ -54,8 +52,6 @@ export default function AddressesPage() {
     address: '',
     city: '',
     state: '',
-    zip: '',
-    country: '',
     phone: '',
   });
 
@@ -83,7 +79,7 @@ export default function AddressesPage() {
     setAddresses(updated);
     saveAddresses(user.id, updated);
     setShowForm(false);
-    setForm({ label: '', firstName: '', lastName: '', address: '', city: '', state: '', zip: '', country: '', phone: '' });
+    setForm({ label: '', firstName: '', lastName: '', address: '', city: '', state: '', phone: '' });
     toast.success(t('add_address') + ' ✓');
   }, [user, form, addresses, t]);
 
@@ -212,25 +208,6 @@ export default function AddressesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-neutral-600 mb-1">{t('zip')}</label>
-                    <input
-                      value={form.zip}
-                      onChange={e => setForm(f => ({ ...f, zip: e.target.value }))}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-neutral-600 mb-1">{t('country')}</label>
-                    <input
-                      value={form.country}
-                      onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 text-sm"
-                    />
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-sm text-neutral-600 mb-1">{t('phone')}</label>
                   <input
@@ -306,11 +283,7 @@ export default function AddressesPage() {
                         <p className="text-sm text-neutral-500">
                           {addr.address}, {addr.city}
                           {addr.state && `, ${addr.state}`}
-                          {addr.zip && ` ${addr.zip}`}
                         </p>
-                        {addr.country && (
-                          <p className="text-sm text-neutral-500">{addr.country}</p>
-                        )}
                         {addr.phone && (
                           <p className="text-sm text-neutral-500">{addr.phone}</p>
                         )}

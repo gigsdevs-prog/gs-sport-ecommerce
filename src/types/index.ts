@@ -78,8 +78,6 @@ export interface ShippingAddress {
   address: string;
   city: string;
   state: string;
-  zip: string;
-  country: string;
   phone: string;
 }
 

@@ -243,9 +243,13 @@ export default function AdminCategoriesPage() {
                 ) : (
                   <>
                     <div className="flex items-center gap-4">
-                      {cat.image && (
-                        <div className="w-10 h-10 rounded overflow-hidden relative">
+                      {cat.image ? (
+                        <div className="w-10 h-10 rounded overflow-hidden relative flex-shrink-0">
                           <Image src={cat.image} alt={cat.name} fill className="object-cover" sizes="40px" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-neutral-100 flex items-center justify-center flex-shrink-0 border border-dashed border-neutral-300">
+                          <span className="text-xs text-neutral-400">No img</span>
                         </div>
                       )}
                       <div>

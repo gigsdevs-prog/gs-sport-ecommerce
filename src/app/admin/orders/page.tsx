@@ -181,8 +181,7 @@ export default function AdminOrdersPage() {
                         <div className="text-sm text-neutral-600 space-y-1">
                           <p>{order.shipping_address.firstName} {order.shipping_address.lastName}</p>
                           <p>{order.shipping_address.address}</p>
-                          <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zip}</p>
-                          <p>{order.shipping_address.country}</p>
+                          <p>{order.shipping_address.city}, {order.shipping_address.state}</p>
                           <p>{order.shipping_address.phone}</p>
                         </div>
                       )}

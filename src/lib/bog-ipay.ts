@@ -112,7 +112,7 @@ export async function createPaymentOrder(params: {
     })),
     locale,
     shop_order_id: shopOrderId,
-    redirect_url: `${siteUrl}/checkout/success?order_id=${shopOrderId}`,
+    redirect_url: `${siteUrl}/api/webhook?order_id=${shopOrderId}`,
     show_shop_order_id_on_extract: true,
     capture_method: 'AUTOMATIC',
     purchase_units: {

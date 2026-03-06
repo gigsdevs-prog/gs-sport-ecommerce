@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations';
 import { SITE_NAME } from '@/lib/constants';
 import Input from '@/components/ui/Input';
@@ -19,7 +18,6 @@ import toast from 'react-hot-toast';
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const supabase = createClient();
 
   const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -27,17 +25,29 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
 
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          redirectTo: `${window.location.origin}/auth/reset-password`,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        toast.error(result.error || 'Something went wrong');
+        setLoading(false);
+        return;
+      }
+
+      setSent(true);
+    } catch {
+      toast.error('Something went wrong');
     }
-
-    setSent(true);
     setLoading(false);
   };
 
