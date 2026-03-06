@@ -4,7 +4,7 @@
 // Docs: https://api.bog.ge/docs/payments/ipay
 // ============================================
 
-const BOG_IPAY_API = 'https://ipay.ge/opay/api/v1';
+const BOG_IPAY_API = (process.env.BOG_IPAY_API_URL || 'https://ipay.ge/opay/api/v1').trim();
 
 interface IPayOrderRequest {
   intent: 'CAPTURE';
@@ -65,7 +65,7 @@ async function getAccessToken(): Promise<string> {
 
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-  const res = await fetch('https://ipay.ge/opay/api/v1/oauth2/token', {
+  const res = await fetch(`${BOG_IPAY_API}/oauth2/token`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,

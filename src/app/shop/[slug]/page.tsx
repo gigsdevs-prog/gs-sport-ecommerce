@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useCartStore } from '@/store/cart';
 import { useWishlistStore } from '@/store/wishlist';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatPrice, getDiscountPercentage } from '@/utils';
 import { withTimeout } from '@/utils';
 import Button from '@/components/ui/Button';
@@ -56,6 +57,7 @@ export default function ProductDetailPage() {
   const { addItem } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
   const { user, isAdmin } = useAuth();
+  const { t } = useLanguage();
 
   const fetchProduct = useCallback(async () => {
     try {
@@ -122,7 +124,7 @@ export default function ProductDetailPage() {
   const handleSubmitReview = async () => {
     if (!user || !product) return;
     if (!reviewComment.trim()) {
-      toast.error('Please write a comment');
+      toast.error(t('write_comment'));
       return;
     }
     setReviewSubmitting(true);
@@ -140,7 +142,7 @@ export default function ProductDetailPage() {
         console.error('Review submit error:', error);
         toast.error(error.message || 'Failed to submit review');
       } else {
-        toast.success('Review submitted!');
+        toast.success(t('review_submitted'));
         setReviewComment('');
         setReviewRating(5);
         // Refresh reviews
@@ -170,7 +172,7 @@ export default function ProductDetailPage() {
       if (error) {
         toast.error('Failed to delete review');
       } else {
-        toast.success('Review deleted');
+        toast.success(t('review_deleted'));
         setReviews(prev => prev.filter(r => r.id !== reviewId));
       }
     } catch (err) {
@@ -198,7 +200,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-light mb-4">Product not found</h1>
+        <h1 className="text-2xl font-light mb-4">{t('product_not_found')}</h1>
         <Link href="/shop" className="text-sm underline text-neutral-500 hover:text-black">
           Back to shop
         </Link>
@@ -219,7 +221,7 @@ export default function ProductDetailPage() {
           className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-black transition-colors mb-8"
         >
           <ChevronLeft size={16} />
-          Back to shop
+          {t('back_to_shop')}
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16">
@@ -344,8 +346,8 @@ export default function ProductDetailPage() {
                 {product.sizes && product.sizes.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs tracking-widest uppercase font-medium">Size</span>
-                      <button className="text-xs text-neutral-500 underline">Size Guide</button>
+                      <span className="text-xs tracking-widest uppercase font-medium">{t('size_label')}</span>
+                      <button className="text-xs text-neutral-500 underline">{t('size_guide')}</button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {product.sizes.map(size => (
@@ -369,7 +371,7 @@ export default function ProductDetailPage() {
                 {product.colors && product.colors.length > 0 && (
                   <div>
                     <span className="text-xs tracking-widest uppercase font-medium mb-3 block">
-                      Color: {selectedColor}
+                      {t('color_label')}: {selectedColor}
                     </span>
                     <div className="flex flex-wrap gap-3">
                       {product.colors.map(color => (
@@ -392,7 +394,7 @@ export default function ProductDetailPage() {
                 {/* Quantity */}
                 <div>
                   <span className="text-xs tracking-widest uppercase font-medium mb-3 block">
-                    Quantity
+                    {t('quantity_label')}
                   </span>
                   <div className="inline-flex items-center border border-neutral-200">
                     <button
@@ -416,7 +418,7 @@ export default function ProductDetailPage() {
                 {/* Actions */}
                 <div className="flex gap-3 pt-2">
                   <Button onClick={handleAddToCart} size="lg" fullWidth disabled={product.stock <= 0}>
-                    {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                    {product.stock <= 0 ? t('out_of_stock') : t('add_to_cart')}
                   </Button>
                   <button
                     onClick={() => toggleItem(product.id)}
@@ -432,7 +434,7 @@ export default function ProductDetailPage() {
 
                 {/* Stock info */}
                 {product.stock > 0 && product.stock <= 5 && (
-                  <p className="text-xs text-orange-600">Only {product.stock} left in stock</p>
+                  <p className="text-xs text-orange-600">{t('only_left').replace('{count}', String(product.stock))}</p>
                 )}
               </div>
             </motion.div>
