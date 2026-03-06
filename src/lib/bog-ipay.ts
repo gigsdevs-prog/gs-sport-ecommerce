@@ -99,6 +99,7 @@ export async function createPaymentOrder(params: {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      'Accept-Language': 'ka',
     },
     body: JSON.stringify(orderRequest),
   });
@@ -145,6 +146,7 @@ export async function getPaymentStatus(orderId: string): Promise<{
   const res = await fetch(`${BOG_API_BASE}/receipt/${orderId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
+      'Accept-Language': 'ka',
     },
   });
 
