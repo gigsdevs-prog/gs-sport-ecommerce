@@ -51,6 +51,7 @@ export interface Order {
   tax: number;
   bog_order_id: string | null;
   bog_payment_hash: string | null;
+  bog_transaction_id: string | null;
   shipping_address: ShippingAddress;
   items?: OrderItem[];
   user?: UserProfile;
