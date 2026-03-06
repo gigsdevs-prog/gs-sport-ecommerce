@@ -10,6 +10,7 @@ import SectionHeading from '@/components/ui/SectionHeading';
 import ProductSlider from '@/components/product/ProductSlider';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
+import { withTimeout } from '@/utils';
 import type { Product } from '@/types';
 
 const supabase = createClient();
@@ -24,13 +25,16 @@ export default function FeaturedProducts() {
     mounted.current = true;
     const fetchProducts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('featured', true)
-          .eq('active', true)
-          .order('created_at', { ascending: false })
-          .limit(8);
+        const { data, error } = await withTimeout(
+          supabase
+            .from('products')
+            .select('*')
+            .eq('featured', true)
+            .eq('active', true)
+            .order('created_at', { ascending: false })
+            .limit(8),
+          8000
+        );
         if (error) console.error('Failed to fetch featured products:', error);
         if (mounted.current && data) setProducts(data);
       } catch (err) {

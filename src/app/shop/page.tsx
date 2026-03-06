@@ -11,6 +11,7 @@ import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ProductCard from '@/components/product/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
+import { withTimeout } from '@/utils';
 import type { Product, Category } from '@/types';
 
 const supabase = createClient();
@@ -72,7 +73,7 @@ function ShopContent() {
           query = query.order('created_at', { ascending: false });
       }
 
-      const { data, error } = await query;
+      const { data, error } = await withTimeout(query, 8000);
       if (error) console.error('Failed to fetch products:', error);
       if (mounted.current) setProducts(data || []);
     } catch (err) {
@@ -87,10 +88,13 @@ function ShopContent() {
     mounted.current = true;
     const fetchCategories = async () => {
       try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
+        const { data, error } = await withTimeout(
+          supabase
+            .from('categories')
+            .select('*')
+            .order('name'),
+          8000
+        );
         if (error) console.error('Failed to fetch categories:', error);
         if (mounted.current && data) setCategories(data);
       } catch (err) {
@@ -145,6 +149,8 @@ function ShopContent() {
           <span className="text-xs text-neutral-500 hidden sm:block">Sort by:</span>
           <div className="relative">
             <select
+              id="sort-by"
+              name="sort-by"
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
               className="appearance-none bg-transparent text-sm pr-6 cursor-pointer outline-none"
@@ -199,6 +205,8 @@ function ShopContent() {
                 <h3 className="text-xs tracking-widest uppercase font-semibold mb-4">Price Range</h3>
                 <div className="space-y-3">
                   <input
+                    id="price-range"
+                    name="price-range"
                     type="range"
                     min={0}
                     max={500}

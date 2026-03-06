@@ -12,7 +12,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
-import { SITE_NAME } from '@/lib/constants';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
@@ -63,7 +62,12 @@ export default function LoginPage() {
         className="w-full max-w-md px-4"
       >
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-light tracking-[0.2em] uppercase">{SITE_NAME}</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="GS SPORT"
+            className="h-16 mx-auto mb-4"
+          />
           <p className="mt-2 text-sm text-neutral-500">Sign in to your account</p>
         </div>
 

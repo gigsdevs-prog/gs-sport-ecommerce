@@ -13,6 +13,7 @@ import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase/client';
+import { withTimeout } from '@/utils';
 import type { Banner } from '@/types';
 
 import 'swiper/css';
@@ -31,11 +32,14 @@ export default function HeroSection() {
     mounted.current = true;
     const fetchBanners = async () => {
       try {
-        const { data, error } = await supabase
-          .from('banners')
-          .select('*')
-          .eq('active', true)
-          .order('sort_order', { ascending: true });
+        const { data, error } = await withTimeout(
+          supabase
+            .from('banners')
+            .select('*')
+            .eq('active', true)
+            .order('sort_order', { ascending: true }),
+          8000
+        );
         if (error) console.error('Failed to fetch banners:', error);
         if (mounted.current && data && data.length > 0) {
           setBanners(data);

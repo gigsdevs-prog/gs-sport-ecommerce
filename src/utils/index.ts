@@ -56,3 +56,16 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     timeoutId = setTimeout(() => fn(...args), delay);
   };
 }
+
+/**
+ * Wraps a promise with a timeout. If the promise doesn't resolve
+ * within `ms` milliseconds it rejects with a timeout error.
+ */
+export function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}

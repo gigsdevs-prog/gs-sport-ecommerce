@@ -13,6 +13,7 @@ import SectionHeading from '@/components/ui/SectionHeading';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode } from 'swiper/modules';
+import { withTimeout } from '@/utils';
 import type { Category } from '@/types';
 
 import 'swiper/css';
@@ -39,11 +40,14 @@ export default function CategoriesGrid() {
     const fetchData = async () => {
       try {
         // Fetch categories
-        const { data: catData, error: catError } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('active', true)
-          .order('name');
+        const { data: catData, error: catError } = await withTimeout(
+          supabase
+            .from('categories')
+            .select('*')
+            .eq('active', true)
+            .order('name'),
+          8000
+        );
         if (catError) console.error('Failed to fetch categories:', catError);
 
         if (mounted.current && catData && catData.length > 0) {

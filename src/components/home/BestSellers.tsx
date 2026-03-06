@@ -10,6 +10,7 @@ import SectionHeading from '@/components/ui/SectionHeading';
 import ProductSlider from '@/components/product/ProductSlider';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
+import { withTimeout } from '@/utils';
 import type { Product } from '@/types';
 
 const supabase = createClient();
@@ -24,13 +25,16 @@ export default function BestSellers() {
     mounted.current = true;
     const fetchProducts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('best_seller', true)
-          .eq('active', true)
-          .order('created_at', { ascending: false })
-          .limit(4);
+        const { data, error } = await withTimeout(
+          supabase
+            .from('products')
+            .select('*')
+            .eq('best_seller', true)
+            .eq('active', true)
+            .order('created_at', { ascending: false })
+            .limit(4),
+          8000
+        );
         if (error) console.error('Failed to fetch best sellers:', error);
         if (mounted.current && data) setProducts(data);
       } catch (err) {
