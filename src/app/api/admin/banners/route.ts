@@ -58,8 +58,8 @@ export async function DELETE(request: Request) {
     const admin = await verifyAdmin();
     if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const body = await request.json();
+    const id = body.id;
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     const adminClient = createAdminSupabaseClient();

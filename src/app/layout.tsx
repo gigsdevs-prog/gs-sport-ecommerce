@@ -6,7 +6,9 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { SiteContentProvider } from '@/hooks/SiteContentProvider';
 import { LanguageProvider } from '@/hooks/useLanguage';
+import { AuthProvider } from '@/hooks/useAuth';
 import NavigationWrapper from '@/components/layout/NavigationWrapper';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import './globals.css';
 
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), {
@@ -48,11 +50,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch footer data server-side — eliminates client-side about_page request
+  let aboutData = null;
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data } = await supabase
+      .from('about_page')
+      .select('phone, instagram_url, facebook_url, tiktok_url')
+      .limit(1)
+      .single();
+    aboutData = data;
+  } catch { /* ignore */ }
+
   return (
     <html lang="en" className={inter.variable}>
       <head>
@@ -61,13 +75,15 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased bg-white text-neutral-900">
         <LanguageProvider>
+        <AuthProvider>
         <SiteContentProvider>
           <Header />
           <CartDrawer />
           <main className="min-h-screen"><NavigationWrapper>{children}</NavigationWrapper></main>
-          <Footer />
+          <Footer about={aboutData} />
           <LiveChat />
         </SiteContentProvider>
+        </AuthProvider>
         </LanguageProvider>
         <Toaster
           position="bottom-right"

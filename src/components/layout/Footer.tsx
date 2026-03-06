@@ -4,13 +4,12 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_NAME } from '@/lib/constants';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useLanguage } from '@/hooks/useLanguage';
-import { createClient } from '@/lib/supabase/client';
 import { Phone } from 'lucide-react';
 import type { AboutPage } from '@/types';
 
@@ -46,8 +45,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-const supabase = createClient();
-
 const footerLinks = {
   shop: [
     { key: 'men', href: '/shop?category=men' },
@@ -72,27 +69,10 @@ const footerLinks = {
   ],
 };
 
-export default function Footer() {
+export default function Footer({ about }: { about: Pick<AboutPage, 'phone' | 'instagram_url' | 'facebook_url' | 'tiktok_url'> | null }) {
   const { getText } = useSiteContent();
   const { t } = useLanguage();
   const logoUrl = getText('site_logo_url') || '/logo.png';
-  const [about, setAbout] = useState<AboutPage | null>(null);
-
-  useEffect(() => {
-    const fetchAbout = async () => {
-      try {
-        const { data } = await supabase
-          .from('about_page')
-          .select('phone, instagram_url, facebook_url, tiktok_url')
-          .limit(1)
-          .single();
-        if (data) setAbout(data as AboutPage);
-      } catch {
-        // ignore
-      }
-    };
-    fetchAbout();
-  }, []);
 
   const socialLinks = useMemo(() => about ? [
     { url: about.instagram_url, icon: InstagramIcon, label: 'Instagram' },

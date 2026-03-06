@@ -13,12 +13,6 @@ export async function POST(request: Request) {
     const { action } = body;
     const supabase = createAdminSupabaseClient();
 
-    // Verify session exists helper
-    const sessionExists = async (id: string) => {
-      const { data } = await supabase.from('chat_sessions').select('id').eq('id', id).single();
-      return !!data;
-    };
-
     if (action === 'create_session') {
       const { id, user_id, guest_name } = body;
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -60,11 +54,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
       }
 
-      // Check if session still exists (may have been deleted by admin)
-      if (!(await sessionExists(chat_id))) {
-        return NextResponse.json({ error: 'session_deleted' }, { status: 404 });
-      }
-
+      // Insert message first — fastest path for the user
       const { error } = await supabase.from('chat_messages').insert({
         chat_id,
         sender_id: sender_id || 'guest',
@@ -74,27 +64,33 @@ export async function POST(request: Request) {
       });
 
       if (error) {
+        // If FK constraint fails, session was deleted
+        if (error.code === '23503') {
+          return NextResponse.json({ error: 'session_deleted' }, { status: 404 });
+        }
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      // Update session timestamp and unread count
-      if (!is_admin) {
-        // User message: increment unread_count atomically via rpc
-        const { data: session } = await supabase
+      // Update session timestamp and unread count — fire-and-forget, don't block the response
+      if (is_admin) {
+        supabase
+          .from('chat_sessions')
+          .update({ updated_at: new Date().toISOString(), unread_count: 0 })
+          .eq('id', chat_id)
+          .then(() => {});
+      } else {
+        supabase
           .from('chat_sessions')
           .select('unread_count')
           .eq('id', chat_id)
-          .single();
-        await supabase
-          .from('chat_sessions')
-          .update({ updated_at: new Date().toISOString(), unread_count: (session?.unread_count || 0) + 1 })
-          .eq('id', chat_id);
-      } else {
-        // Admin message: reset unread + update timestamp
-        await supabase
-          .from('chat_sessions')
-          .update({ updated_at: new Date().toISOString(), unread_count: 0 })
-          .eq('id', chat_id);
+          .single()
+          .then(({ data: s }) => {
+            supabase
+              .from('chat_sessions')
+              .update({ updated_at: new Date().toISOString(), unread_count: (s?.unread_count || 0) + 1 })
+              .eq('id', chat_id)
+              .then(() => {});
+          });
       }
 
       return NextResponse.json({ success: true });

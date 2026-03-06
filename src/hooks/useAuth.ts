@@ -1,22 +1,32 @@
 // ============================================
-// GS SPORT - Custom Hooks: useAuth (hardened)
-// Mounted checks, try/catch on all fetches,
-// safety timeout so loading never hangs
+// GS SPORT - Custom Hooks: useAuth (context-based)
+// Single fetch, shared state across all consumers
 // ============================================
 
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { UserProfile } from '@/types';
 import type { User } from '@supabase/supabase-js';
+import React from 'react';
 
 // Module-level singleton — always same reference
 const supabase = createClient();
 
 const SESSION_TIMEOUT_MS = 3_000;
 
-export function useAuth() {
+interface AuthContextValue {
+  user: User | null;
+  profile: UserProfile | null;
+  loading: boolean;
+  isAdmin: boolean;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,9 +96,6 @@ export function useAuth() {
 
     const getUser = async () => {
       try {
-        // Use getSession() first — it reads from local cache and is instant.
-        // getUser() makes a network call and is slower.
-        // Wrap in a timeout so a hanging refresh doesn't block the UI.
         const sessionResult = await Promise.race([
           supabase.auth.getSession(),
           new Promise<null>((resolve) =>
@@ -135,11 +142,21 @@ export function useAuth() {
     setProfile(null);
   }, []);
 
-  return {
+  const value = React.useMemo(() => ({
     user,
     profile,
     loading,
     isAdmin: profile?.role === 'admin',
     signOut,
-  };
+  }), [user, profile, loading, signOut]);
+
+  return React.createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return ctx;
 }
