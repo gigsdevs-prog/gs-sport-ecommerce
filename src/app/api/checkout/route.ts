@@ -21,11 +21,22 @@ export async function POST(request: Request) {
     const adminClient = createAdminSupabaseClient();
     const isCash = payment_method === 'cash';
 
+    // Verify user exists in public.users if logged in
+    let userId: string | null = null;
+    if (user?.id) {
+      const { data: dbUser } = await adminClient
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      userId = dbUser ? user.id : null;
+    }
+
     // Create order in DB
     const { data: order, error: orderError } = await adminClient
       .from('orders')
       .insert({
-        user_id: user?.id || null,
+        user_id: userId,
         status: isCash ? 'pending' : 'awaiting_payment',
         payment_method: isCash ? 'cash' : 'card',
         total,
@@ -39,7 +50,7 @@ export async function POST(request: Request) {
 
     if (orderError) {
       console.error('Order creation error:', orderError);
-      return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+      return NextResponse.json({ error: orderError.message || 'Failed to create order' }, { status: 500 });
     }
 
     // Create order items

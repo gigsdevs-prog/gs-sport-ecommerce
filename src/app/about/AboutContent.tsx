@@ -113,7 +113,7 @@ export default function AboutContent() {
           </motion.div>
 
           {/* Right side - Content */}
-          <motion.div variants={fadeInRight}>
+          <motion.div variants={fadeInRight} className="text-center lg:text-left">
             <motion.p
               variants={fadeInUp}
               className="text-xs tracking-[0.3em] uppercase text-neutral-400 mb-4 font-medium"
