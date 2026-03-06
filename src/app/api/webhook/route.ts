@@ -39,12 +39,12 @@ export async function POST(request: Request) {
 
   try {
     rawPayload = await request.json();
-    const { order_id, payment_hash, status, transaction_id } = rawPayload as {
-      order_id?: string;
-      payment_hash?: string;
-      status?: string;
-      transaction_id?: string;
-    };
+    
+    // Support both old iPay and new BOG API callback formats
+    const order_id = (rawPayload.order_id || rawPayload.id) as string | undefined;
+    const payment_hash = rawPayload.payment_hash as string | undefined;
+    const status = (rawPayload.status || (rawPayload.order_status as Record<string, unknown>)?.key) as string | undefined;
+    const transaction_id = rawPayload.transaction_id as string | undefined;
 
     bogOrderId = order_id;
 
@@ -133,7 +133,8 @@ export async function POST(request: Request) {
     }
 
     // 5. Process based on verified status
-    if (verifiedStatus === 'COMPLETED' || verifiedStatus === 'CAPTURED') {
+    const normalizedStatus = verifiedStatus?.toUpperCase();
+    if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'CAPTURED' || normalizedStatus === 'SUCCEEDED') {
       // Skip if already processed (card orders start as 'pending' with no payment hash)
       if (order.status !== 'pending' || order.bog_payment_hash) {
         await logWebhookEvent(supabase, {
@@ -195,7 +196,7 @@ export async function POST(request: Request) {
         processed: true,
       });
 
-    } else if (verifiedStatus === 'REJECTED' || verifiedStatus === 'ERROR' || verifiedStatus === 'TIMEOUT') {
+    } else if (normalizedStatus === 'REJECTED' || normalizedStatus === 'ERROR' || normalizedStatus === 'TIMEOUT' || normalizedStatus === 'FAILED') {
       // Payment failed
       if (order.status === 'pending' && !order.bog_payment_hash) {
         await supabase
@@ -278,10 +279,23 @@ export async function GET(request: Request) {
   // Verify with BOG API before showing success
   try {
     const bogResult = await getPaymentStatus(orderId);
-    if (bogResult.status === 'COMPLETED' || bogResult.status === 'CAPTURED') {
-      return NextResponse.redirect(
-        new URL(`/checkout/success?order_id=${bogResult.shop_order_id}`, request.url)
-      );
+    const paymentStatus = bogResult.status?.toUpperCase();
+    if (paymentStatus === 'COMPLETED' || paymentStatus === 'CAPTURED' || paymentStatus === 'SUCCEEDED') {
+      // Use shop_order_id if available, otherwise look up in DB
+      let shopOrderId = bogResult.shop_order_id;
+      if (!shopOrderId) {
+        const { data: dbOrder } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('bog_order_id', orderId)
+          .single();
+        shopOrderId = dbOrder?.id;
+      }
+      if (shopOrderId) {
+        return NextResponse.redirect(
+          new URL(`/checkout/success?order_id=${shopOrderId}`, request.url)
+        );
+      }
     }
   } catch {
     // Verification failed — redirect to checkout

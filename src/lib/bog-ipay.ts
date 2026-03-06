@@ -1,43 +1,20 @@
 // ============================================
-// GS SPORT - BOG iPay Integration (Bank of Georgia)
-// Redirect-based payment: create order → redirect to BOG → callback
-// Docs: https://api.bog.ge/docs/payments/ipay
+// GS SPORT - BOG Payment Integration (Bank of Georgia)
+// New BOG Payments API: https://api.bog.ge
 // ============================================
 
-const BOG_IPAY_API = (process.env.BOG_IPAY_API_URL || 'https://ipay.ge/opay/api/v1').trim();
+const BOG_API_BASE = (process.env.BOG_IPAY_API_URL || 'https://api.bog.ge/payments/v1').trim();
+const BOG_AUTH_URL = (process.env.BOG_AUTH_URL || 'https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token').trim();
 
-interface IPayOrderRequest {
-  intent: 'CAPTURE';
-  items: {
-    amount: string;
-    description: string;
-    quantity: string;
-    product_id: string;
-  }[];
-  locale: 'ka' | 'en';
-  shop_order_id: string;
-  redirect_url: string;
-  show_shop_order_id_on_extract: boolean;
-  capture_method: 'AUTOMATIC';
-  purchase_units: {
-    amount: {
-      currency_code: 'GEL' | 'USD' | 'EUR';
-      value: string;
-    };
+interface BOGOrderResponse {
+  id: string;
+  _links: {
+    redirect: { href: string };
+    details: { href: string };
   };
 }
 
-interface IPayOrderResponse {
-  status: string;
-  order_id: string;
-  links: {
-    href: string;
-    rel: string;
-    method: string;
-  }[];
-}
-
-interface IPayAuthResponse {
+interface BOGAuthResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
@@ -47,7 +24,7 @@ interface IPayAuthResponse {
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 /**
- * Get BOG iPay access token (OAuth2 client_credentials)
+ * Get BOG access token (OAuth2 client_credentials)
  */
 async function getAccessToken(): Promise<string> {
   // Return cached token if still valid (with 60s buffer)
@@ -59,27 +36,28 @@ async function getAccessToken(): Promise<string> {
   const clientSecret = (process.env.BOG_IPAY_CLIENT_SECRET || '').trim();
 
   if (!clientId || !clientSecret) {
-    console.error('BOG iPay credentials missing. CLIENT_ID length:', clientId.length, 'CLIENT_SECRET length:', clientSecret.length);
-    throw new Error('BOG iPay credentials not configured');
+    console.error('BOG credentials missing. CLIENT_ID length:', clientId.length, 'CLIENT_SECRET length:', clientSecret.length);
+    throw new Error('BOG credentials not configured');
   }
 
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-  const res = await fetch(`${BOG_IPAY_API}/oauth2/token`, {
+  const res = await fetch(BOG_AUTH_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: 'grant_type=client_credentials',
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: clientId,
+      client_secret: clientSecret,
+    }).toString(),
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`BOG iPay auth failed: ${res.status} ${text}`);
+    throw new Error(`BOG auth failed: ${res.status} ${text}`);
   }
 
-  const data: IPayAuthResponse = await res.json();
+  const data: BOGAuthResponse = await res.json();
   cachedToken = {
     token: data.access_token,
     expiresAt: Date.now() + data.expires_in * 1000,
@@ -89,7 +67,7 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Create a payment order on BOG iPay
+ * Create a payment order on BOG Payments API
  */
 export async function createPaymentOrder(params: {
   shopOrderId: string;
@@ -103,28 +81,26 @@ export async function createPaymentOrder(params: {
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gssport.ge').trim();
 
-  const orderRequest: IPayOrderRequest = {
-    intent: 'CAPTURE',
-    items: items.map(item => ({
-      amount: item.price.toFixed(2),
-      description: item.name,
-      quantity: item.quantity.toString(),
-      product_id: item.productId,
-    })),
-    locale,
-    shop_order_id: shopOrderId,
-    redirect_url: `${siteUrl}/api/webhook?order_id=${shopOrderId}`,
-    show_shop_order_id_on_extract: true,
-    capture_method: 'AUTOMATIC',
+  const orderRequest = {
+    callback_url: `${siteUrl}/api/webhook`,
+    external_order_id: shopOrderId,
     purchase_units: {
-      amount: {
-        currency_code: currency,
-        value: amount.toFixed(2),
-      },
+      currency: currency,
+      total_amount: Number(amount.toFixed(2)),
+      basket: items.map(item => ({
+        quantity: item.quantity,
+        unit_price: Number(item.price.toFixed(2)),
+        product_id: item.productId,
+      })),
     },
+    redirect_urls: {
+      success: `${siteUrl}/api/webhook?order_id=${shopOrderId}`,
+      fail: `${siteUrl}/checkout?payment=failed`,
+    },
+    locale,
   };
 
-  const res = await fetch(`${BOG_IPAY_API}/checkout/orders`, {
+  const res = await fetch(`${BOG_API_BASE}/ecommerce/orders`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -135,25 +111,19 @@ export async function createPaymentOrder(params: {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`BOG iPay order creation failed: ${res.status} ${text}`);
+    throw new Error(`BOG order creation failed: ${res.status} ${text}`);
   }
 
-  const data: IPayOrderResponse = await res.json();
-
-  // Find the redirect link
-  const approveLink = data.links?.find(l => l.rel === 'approve');
-  if (!approveLink) {
-    throw new Error('No redirect URL returned from BOG iPay');
-  }
+  const data: BOGOrderResponse = await res.json();
 
   return {
-    orderId: data.order_id,
-    redirectUrl: approveLink.href,
+    orderId: data.id,
+    redirectUrl: data._links.redirect.href,
   };
 }
 
 /**
- * Check payment status with BOG iPay
+ * Check payment status with BOG Payments API
  */
 export async function getPaymentStatus(orderId: string): Promise<{
   status: string;
@@ -163,7 +133,7 @@ export async function getPaymentStatus(orderId: string): Promise<{
 }> {
   const token = await getAccessToken();
 
-  const res = await fetch(`${BOG_IPAY_API}/checkout/orders/${orderId}`, {
+  const res = await fetch(`${BOG_API_BASE}/receipt/${orderId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
@@ -171,8 +141,16 @@ export async function getPaymentStatus(orderId: string): Promise<{
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`BOG iPay status check failed: ${res.status} ${text}`);
+    throw new Error(`BOG status check failed: ${res.status} ${text}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  
+  // Map BOG response to our expected format
+  return {
+    status: data.order_status?.key || data.status || 'UNKNOWN',
+    order_id: data.id || orderId,
+    shop_order_id: data.external_order_id || '',
+    payment_hash: data.payment_hash,
+  };
 }
