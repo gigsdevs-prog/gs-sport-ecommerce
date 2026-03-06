@@ -57,3 +57,20 @@
     display: none;
   }
 }
+
+/* Hero Swiper pagination dots */
+.hero-swiper .swiper-pagination {
+  bottom: 24px !important;
+}
+.hero-swiper .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+.hero-swiper .swiper-pagination-bullet-active {
+  width: 32px;
+  border-radius: 4px;
+  background: #fff;
+}

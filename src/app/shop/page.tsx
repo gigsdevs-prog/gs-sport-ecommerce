@@ -90,7 +90,6 @@ function ShopContent() {
         const { data, error } = await supabase
           .from('categories')
           .select('*')
-          .eq('active', true)
           .order('name');
         if (error) console.error('Failed to fetch categories:', error);
         if (mounted.current && data) setCategories(data);

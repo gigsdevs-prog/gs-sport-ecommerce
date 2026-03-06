@@ -232,7 +232,7 @@ export default function ProductDetailPage() {
                 <video
                   src={mediaItems[selectedImage].url}
                   controls
-                  autoPlay
+                  playsInline
                   className="w-full h-full object-contain bg-black"
                 />
               ) : mediaItems[selectedImage]?.url ? (

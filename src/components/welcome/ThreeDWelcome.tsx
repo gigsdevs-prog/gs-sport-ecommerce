@@ -111,7 +111,7 @@ export default function ThreeDWelcome() {
     }
   }, []);
 
-  // Loading progress
+  // Loading progress - fast
   useEffect(() => {
     if (!show) return;
     const interval = setInterval(() => {
@@ -120,24 +120,23 @@ export default function ThreeDWelcome() {
           clearInterval(interval);
           return 100;
         }
-        // Faster progress since no 3D to load
-        return p + 8;
+        return p + 20;
       });
-    }, 80);
+    }, 40);
     return () => clearInterval(interval);
   }, [show]);
 
-  // Phase transitions
+  // Phase transitions - faster (2s total)
   useEffect(() => {
     if (!show) return;
     if (progress >= 100 && phase === 'loading') {
       setPhase('reveal');
-      setTimeout(() => setPhase('text'), 800);
-      setTimeout(() => setPhase('fadeout'), 3200);
+      setTimeout(() => setPhase('text'), 400);
+      setTimeout(() => setPhase('fadeout'), 1500);
       setTimeout(() => {
         setShow(false);
         markIntroSeen();
-      }, 4000);
+      }, 2000);
     }
   }, [progress, phase, show]);
 

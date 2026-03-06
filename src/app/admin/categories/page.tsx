@@ -4,10 +4,10 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Save, X, Tags } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Tags, Upload } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -24,8 +24,16 @@ export default function AdminCategoriesPage() {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newSlug, setNewSlug] = useState('');
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newImagePreview, setNewImagePreview] = useState('');
   const [editName, setEditName] = useState('');
   const [editSlug, setEditSlug] = useState('');
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const newFileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+
   const fetchCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase.from('categories').select('*').order('name');
@@ -40,35 +48,81 @@ export default function AdminCategoriesPage() {
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
+  const uploadImage = async (file: File, slug: string): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('key', `category-${slug}`);
+      const res = await fetch('/api/admin/images', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Upload failed'); return null; }
+      return data.url;
+    } catch { toast.error('Upload failed'); return null; }
+  };
+
+  const handleNewImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewImageFile(file);
+      setNewImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      setEditImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
+    setUploading(true);
     try {
+      let imageUrl: string | null = null;
+      const categorySlug = newSlug || slugify(newName);
+      if (newImageFile) {
+        imageUrl = await uploadImage(newImageFile, categorySlug);
+      }
       const response = await fetch('/api/admin/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName, slug: newSlug || slugify(newName), active: true }),
+        body: JSON.stringify({ name: newName, slug: categorySlug, active: true, image: imageUrl }),
       });
       const result = await response.json();
       if (!response.ok) { toast.error(result.error || 'Failed to create'); return; }
       toast.success('Category created');
       setNewName(''); setNewSlug(''); setShowNew(false);
+      setNewImageFile(null); setNewImagePreview('');
       fetchCategories();
     } catch (err) { console.error(err); toast.error('Network error'); }
+    finally { setUploading(false); }
   };
 
   const handleUpdate = async (id: string) => {
+    setUploading(true);
     try {
+      let imageUrl: string | undefined = undefined;
+      if (editImageFile) {
+        const url = await uploadImage(editImageFile, editSlug);
+        if (url) imageUrl = url;
+      }
+      const body: Record<string, unknown> = { id, name: editName, slug: editSlug };
+      if (imageUrl !== undefined) body.image = imageUrl;
       const response = await fetch('/api/admin/categories', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, name: editName, slug: editSlug }),
+        body: JSON.stringify(body),
       });
       const result = await response.json();
       if (!response.ok) { toast.error(result.error || 'Failed to update'); return; }
       toast.success('Category updated');
       setEditingId(null);
+      setEditImageFile(null); setEditImagePreview('');
       fetchCategories();
     } catch (err) { console.error(err); toast.error('Network error'); }
+    finally { setUploading(false); }
   };
 
   const handleDelete = async (id: string) => {
@@ -101,6 +155,8 @@ export default function AdminCategoriesPage() {
     setEditingId(cat.id);
     setEditName(cat.name);
     setEditSlug(cat.slug);
+    setEditImageFile(null);
+    setEditImagePreview(cat.image || '');
   };
 
   return (
@@ -126,9 +182,24 @@ export default function AdminCategoriesPage() {
               onChange={e => { setNewName(e.target.value); setNewSlug(slugify(e.target.value)); }} />
             <Input label="Slug" value={newSlug} onChange={e => setNewSlug(e.target.value)} />
           </div>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-neutral-600 mb-2">Category Image</label>
+            <input ref={newFileRef} type="file" accept="image/*" onChange={handleNewImageSelect} className="hidden" />
+            <div className="flex items-center gap-4">
+              {newImagePreview && (
+                <div className="w-16 h-16 rounded-lg overflow-hidden relative border border-neutral-200">
+                  <img src={newImagePreview} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <button type="button" onClick={() => newFileRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 border border-neutral-200 rounded-lg text-sm hover:border-black transition-colors">
+                <Upload size={16} /> {newImageFile ? 'Change Image' : 'Upload Image'}
+              </button>
+            </div>
+          </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleCreate}><Save size={16} /> Create</Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}><X size={16} /> Cancel</Button>
+            <Button size="sm" onClick={handleCreate} disabled={uploading}><Save size={16} /> {uploading ? 'Creating...' : 'Create'}</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setShowNew(false); setNewImageFile(null); setNewImagePreview(''); }}><X size={16} /> Cancel</Button>
           </div>
         </motion.div>
       )}
@@ -147,13 +218,27 @@ export default function AdminCategoriesPage() {
             {categories.map(cat => (
               <div key={cat.id} className="p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors">
                 {editingId === cat.id ? (
-                  <div className="flex-1 flex items-center gap-3">
-                    <input value={editName} onChange={e => setEditName(e.target.value)}
-                      className="px-3 py-2 border border-neutral-200 text-sm rounded outline-none focus:border-black" />
-                    <input value={editSlug} onChange={e => setEditSlug(e.target.value)}
-                      className="px-3 py-2 border border-neutral-200 text-sm rounded outline-none focus:border-black" />
-                    <button onClick={() => handleUpdate(cat.id)} className="p-2 text-green-600 hover:text-green-700"><Save size={16} /></button>
-                    <button onClick={() => setEditingId(null)} className="p-2 text-neutral-400 hover:text-black"><X size={16} /></button>
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input value={editName} onChange={e => setEditName(e.target.value)}
+                        className="px-3 py-2 border border-neutral-200 text-sm rounded outline-none focus:border-black" />
+                      <input value={editSlug} onChange={e => setEditSlug(e.target.value)}
+                        className="px-3 py-2 border border-neutral-200 text-sm rounded outline-none focus:border-black" />
+                      <button onClick={() => handleUpdate(cat.id)} disabled={uploading} className="p-2 text-green-600 hover:text-green-700"><Save size={16} /></button>
+                      <button onClick={() => { setEditingId(null); setEditImageFile(null); setEditImagePreview(''); }} className="p-2 text-neutral-400 hover:text-black"><X size={16} /></button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input ref={editFileRef} type="file" accept="image/*" onChange={handleEditImageSelect} className="hidden" />
+                      {(editImagePreview || cat.image) && (
+                        <div className="w-12 h-12 rounded overflow-hidden relative border border-neutral-200">
+                          <img src={editImagePreview || cat.image || ''} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <button type="button" onClick={() => editFileRef.current?.click()}
+                        className="flex items-center gap-2 px-3 py-1.5 border border-neutral-200 rounded text-xs hover:border-black transition-colors">
+                        <Upload size={14} /> {editImageFile ? 'Change' : 'Upload'} Image
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>

@@ -1,5 +1,5 @@
 // ============================================
-// GS SPORT - Hero Section
+// GS SPORT - Hero Section (Swiper Banners)
 // ============================================
 
 'use client';
@@ -7,11 +7,17 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useLanguage } from '@/hooks/useLanguage';
 import { createClient } from '@/lib/supabase/client';
 import type { Banner } from '@/types';
+
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/effect-fade';
 
 const supabase = createClient();
 
@@ -19,7 +25,6 @@ export default function HeroSection() {
   const { getText } = useSiteContent();
   const { t } = useLanguage();
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [currentBanner, setCurrentBanner] = useState(0);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -46,58 +51,50 @@ export default function HeroSection() {
     };
   }, []);
 
-  useEffect(() => {
-    if (banners.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentBanner(prev => (prev + 1) % banners.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [banners.length]);
-
   return (
     <>
     <section className="relative h-[70vh] sm:h-[80vh] lg:h-[90vh] overflow-hidden bg-neutral-100">
-      {/* Background Image */}
-      <AnimatePresence mode="wait">
-        {banners.length > 0 && banners[currentBanner] ? (
-          <motion.div
-            key={currentBanner}
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
-            className="absolute inset-0"
-          >
-            {banners[currentBanner].image_url?.endsWith('.gif') ? (
-              <img
-                src={banners[currentBanner].image_url}
-                alt={banners[currentBanner].title || 'Banner'}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <Image
-                src={banners[currentBanner].image_url}
-                alt={banners[currentBanner].title || 'Banner'}
-                fill
-                className="object-cover"
-                priority
-                sizes="100vw"
-                quality={95}
-              />
-            )}
-            <div className="absolute inset-0 bg-black/20" />
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-gradient-to-br from-neutral-100 to-neutral-200"
-          />
-        )}
-      </AnimatePresence>
+      {banners.length > 0 ? (
+        <Swiper
+          modules={[Autoplay, Pagination, EffectFade]}
+          effect="fade"
+          autoplay={{ delay: 6000, disableOnInteraction: false }}
+          pagination={{ clickable: true }}
+          loop={banners.length > 1}
+          className="w-full h-full hero-swiper"
+          speed={1200}
+        >
+          {banners.map((banner) => (
+            <SwiperSlide key={banner.id}>
+              <div className="absolute inset-0">
+                {banner.image_url?.endsWith('.gif') ? (
+                  <img
+                    src={banner.image_url}
+                    alt={banner.title || 'Banner'}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={banner.image_url}
+                    alt={banner.title || 'Banner'}
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="100vw"
+                    quality={95}
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/20" />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-neutral-100 to-neutral-200" />
+      )}
 
       {/* Content */}
-      <div className="relative z-10 h-full flex items-center">
+      <div className="absolute inset-0 z-10 flex items-center pointer-events-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -136,21 +133,6 @@ export default function HeroSection() {
           </motion.div>
         </div>
       </div>
-
-      {/* Banner dots */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3">
-          {banners.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentBanner(i)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                i === currentBanner ? 'bg-white w-8' : 'bg-white/50'
-              }`}
-            />
-          ))}
-        </div>
-      )}
     </section>
 
     {/* Shop Now Button — below the banner */}

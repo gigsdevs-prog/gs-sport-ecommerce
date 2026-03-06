@@ -347,7 +347,7 @@ export default function LiveChat() {
                     placeholder={t('your_name')}
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-sm outline-none focus:border-black transition-colors mb-3"
+                    className="w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-[16px] outline-none focus:border-black transition-colors mb-3"
                   />
                 )}
 
@@ -399,7 +399,7 @@ export default function LiveChat() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder={t('type_message')}
-                      className="flex-1 px-3.5 py-2.5 bg-neutral-50 rounded-full text-sm outline-none focus:bg-neutral-100 transition-colors"
+                      className="flex-1 px-3.5 py-2.5 bg-neutral-50 rounded-full text-[16px] outline-none focus:bg-neutral-100 transition-colors"
                     />
                     <button
                       onClick={sendMessage}
