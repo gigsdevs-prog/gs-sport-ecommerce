@@ -89,7 +89,7 @@ export async function createPaymentOrder(params: {
       success: `${siteUrl}/api/webhook?shop_order_id=${shopOrderId}`,
       fail: `${siteUrl}/checkout?payment=failed`,
     },
-    locale,
+    language: locale,
   };
 
   console.log('[BOG] Creating order, request:', JSON.stringify(orderRequest));
