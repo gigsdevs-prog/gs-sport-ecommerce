@@ -55,10 +55,11 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  const clientId = process.env.BOG_IPAY_CLIENT_ID;
-  const clientSecret = process.env.BOG_IPAY_CLIENT_SECRET;
+  const clientId = (process.env.BOG_IPAY_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.BOG_IPAY_CLIENT_SECRET || '').trim();
 
   if (!clientId || !clientSecret) {
+    console.error('BOG iPay credentials missing. CLIENT_ID length:', clientId.length, 'CLIENT_SECRET length:', clientSecret.length);
     throw new Error('BOG iPay credentials not configured');
   }
 

@@ -43,6 +43,10 @@ export const metadata: Metadata = {
   },
   description: 'Premium athletic wear designed for those who demand excellence. Shop the latest in high-performance sportswear.',
   keywords: ['athletic wear', 'sportswear', 'premium', 'GS SPORT', 'fitness', 'activewear'],
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
   openGraph: {
     title: 'GS SPORT | Premium Athletic Wear',
     description: 'Elevate your game with GS SPORT premium athletic wear.',
