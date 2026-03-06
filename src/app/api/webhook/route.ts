@@ -260,45 +260,71 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const supabase = createAdminSupabaseClient();
   const url = new URL(request.url);
-  const orderId = url.searchParams.get('order_id');
+  // BOG may append order_id, or we pass our shop_order_id in the redirect URL
+  const bogOrderId = url.searchParams.get('order_id');
+  const shopOrderId = url.searchParams.get('shop_order_id');
   const clientIp = getClientIp(request);
 
-  if (!orderId) {
+  console.log('[Webhook GET] Redirect callback, params:', Object.fromEntries(url.searchParams));
+
+  // Look up order - either by BOG order ID or shop order ID
+  let dbOrder: { id: string; bog_order_id: string | null; status: string } | null = null;
+  
+  if (bogOrderId) {
+    const { data } = await supabase
+      .from('orders')
+      .select('id, bog_order_id, status')
+      .eq('bog_order_id', bogOrderId)
+      .single();
+    dbOrder = data;
+  } else if (shopOrderId) {
+    const { data } = await supabase
+      .from('orders')
+      .select('id, bog_order_id, status')
+      .eq('id', shopOrderId)
+      .single();
+    dbOrder = data;
+  }
+
+  if (!dbOrder) {
+    console.log('[Webhook GET] No order found');
     return NextResponse.redirect(new URL('/checkout', request.url));
   }
+
+  console.log('[Webhook GET] Found order:', dbOrder.id, 'bog_order_id:', dbOrder.bog_order_id, 'status:', dbOrder.status);
 
   // Log redirect callback
   await logWebhookEvent(supabase, {
     event_type: 'redirect_callback',
-    bog_order_id: orderId,
+    bog_order_id: dbOrder.bog_order_id || bogOrderId || shopOrderId || '',
     status: 'redirect',
     ip_address: clientIp,
     processed: true,
   }).catch(() => {});
 
-  // Verify with BOG API before showing success
-  try {
-    const bogResult = await getPaymentStatus(orderId);
-    const paymentStatus = bogResult.status?.toUpperCase();
-    if (paymentStatus === 'COMPLETED' || paymentStatus === 'CAPTURED' || paymentStatus === 'SUCCEEDED') {
-      // Use shop_order_id if available, otherwise look up in DB
-      let shopOrderId = bogResult.shop_order_id;
-      if (!shopOrderId) {
-        const { data: dbOrder } = await supabase
-          .from('orders')
-          .select('id')
-          .eq('bog_order_id', orderId)
-          .single();
-        shopOrderId = dbOrder?.id;
-      }
-      if (shopOrderId) {
+  // Verify with BOG API if we have a BOG order ID
+  if (dbOrder.bog_order_id) {
+    try {
+      const bogResult = await getPaymentStatus(dbOrder.bog_order_id);
+      const paymentStatus = bogResult.status?.toUpperCase();
+      console.log('[Webhook GET] BOG status:', paymentStatus, 'for BOG order:', dbOrder.bog_order_id);
+      
+      if (paymentStatus === 'COMPLETED' || paymentStatus === 'CAPTURED' || paymentStatus === 'SUCCEEDED') {
         return NextResponse.redirect(
-          new URL(`/checkout/success?order_id=${shopOrderId}`, request.url)
+          new URL(`/checkout/success?order_id=${dbOrder.id}`, request.url)
         );
       }
+    } catch (err) {
+      console.error('[Webhook GET] BOG verification failed:', err);
     }
-  } catch {
-    // Verification failed — redirect to checkout
+  }
+
+  // If verification failed or pending, still redirect to success
+  // (the POST webhook callback handles the actual status update)
+  if (dbOrder.status === 'processing' || dbOrder.status === 'pending') {
+    return NextResponse.redirect(
+      new URL(`/checkout/success?order_id=${dbOrder.id}`, request.url)
+    );
   }
 
   return NextResponse.redirect(new URL('/checkout', request.url));

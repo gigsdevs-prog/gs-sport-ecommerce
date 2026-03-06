@@ -79,7 +79,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, order_id: order.id });
     }
 
-    // Card payment — redirect to BOG iPay
+    // Card payment — redirect to BOG
+    console.log('[Checkout] Creating BOG payment for order:', order.id, 'amount:', total);
     const payment = await createPaymentOrder({
       shopOrderId: order.id,
       amount: total,
@@ -91,6 +92,8 @@ export async function POST(request: Request) {
         productId: item.product_id,
       })),
     });
+
+    console.log('[Checkout] BOG payment created:', payment.orderId, 'redirect:', payment.redirectUrl);
 
     await adminClient
       .from('orders')

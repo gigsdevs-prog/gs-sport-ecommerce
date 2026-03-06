@@ -6,14 +6,6 @@
 const BOG_API_BASE = (process.env.BOG_IPAY_API_URL || 'https://api.bog.ge/payments/v1').trim();
 const BOG_AUTH_URL = (process.env.BOG_AUTH_URL || 'https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token').trim();
 
-interface BOGOrderResponse {
-  id: string;
-  _links: {
-    redirect: { href: string };
-    details: { href: string };
-  };
-}
-
 interface BOGAuthResponse {
   access_token: string;
   token_type: string;
@@ -94,11 +86,13 @@ export async function createPaymentOrder(params: {
       })),
     },
     redirect_urls: {
-      success: `${siteUrl}/api/webhook?order_id=${shopOrderId}`,
+      success: `${siteUrl}/api/webhook?shop_order_id=${shopOrderId}`,
       fail: `${siteUrl}/checkout?payment=failed`,
     },
     locale,
   };
+
+  console.log('[BOG] Creating order, request:', JSON.stringify(orderRequest));
 
   const res = await fetch(`${BOG_API_BASE}/ecommerce/orders`, {
     method: 'POST',
@@ -111,14 +105,29 @@ export async function createPaymentOrder(params: {
 
   if (!res.ok) {
     const text = await res.text();
+    console.error('[BOG] Order creation failed:', res.status, text);
     throw new Error(`BOG order creation failed: ${res.status} ${text}`);
   }
 
-  const data: BOGOrderResponse = await res.json();
+  const data = await res.json();
+  console.log('[BOG] Order creation response:', JSON.stringify(data));
+
+  // Extract redirect URL - support multiple response formats
+  const redirectUrl = data._links?.redirect?.href 
+    || data.links?.find((l: { rel: string; href: string }) => l.rel === 'redirect' || l.rel === 'approve')?.href
+    || data.redirect_url
+    || data.redirectUrl;
+
+  if (!redirectUrl) {
+    console.error('[BOG] No redirect URL in response:', JSON.stringify(data));
+    throw new Error('No redirect URL returned from BOG');
+  }
+
+  const orderId = data.id || data.order_id;
 
   return {
-    orderId: data.id,
-    redirectUrl: data._links.redirect.href,
+    orderId,
+    redirectUrl,
   };
 }
 
