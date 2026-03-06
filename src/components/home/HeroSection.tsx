@@ -4,7 +4,6 @@
 
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -12,48 +11,15 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useLanguage } from '@/hooks/useLanguage';
-import { createClient } from '@/lib/supabase/client';
-import { withTimeout } from '@/utils';
 import type { Banner } from '@/types';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
-const supabase = createClient();
-
-export default function HeroSection() {
+export default function HeroSection({ banners }: { banners: Banner[] }) {
   const { getText } = useSiteContent();
   const { t } = useLanguage();
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    const fetchBanners = async () => {
-      try {
-        const { data, error } = await withTimeout(
-          supabase
-            .from('banners')
-            .select('*')
-            .eq('active', true)
-            .order('sort_order', { ascending: true }),
-          8000
-        );
-        if (error) console.error('Failed to fetch banners:', error);
-        if (mounted.current && data && data.length > 0) {
-          setBanners(data);
-        }
-      } catch (err) {
-        console.error('Banner fetch error:', err);
-      }
-    };
-    fetchBanners();
-
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
 
   return (
     <>

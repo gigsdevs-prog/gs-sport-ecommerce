@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
+import { withTimeout } from '@/utils';
 
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
@@ -50,21 +51,29 @@ export default function Page() {
   const fetchDashboardData = useCallback(async () => {
     if (!user) return;
     try {
-      const { data: orders, error: ordersErr } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (ordersErr) console.error('Failed to fetch orders:', ordersErr);
-      if (mounted.current && orders) setRecentOrders(orders);
+      const [ordersResult, wishlistResult] = await Promise.all([
+        withTimeout(
+          supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(3),
+          8000
+        ),
+        withTimeout(
+          supabase
+            .from('wishlist')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          8000
+        ),
+      ]);
+      if (ordersResult.error) console.error('Failed to fetch orders:', ordersResult.error);
+      if (mounted.current && ordersResult.data) setRecentOrders(ordersResult.data);
 
-      const { count, error: countErr } = await supabase
-        .from('wishlist')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      if (countErr) console.error('Failed to fetch wishlist count:', countErr);
-      if (mounted.current) setWishlistCount(count || 0);
+      if (wishlistResult.error) console.error('Failed to fetch wishlist count:', wishlistResult.error);
+      if (mounted.current) setWishlistCount(wishlistResult.count || 0);
     } catch (err) {
       console.error('Dashboard data fetch error:', err);
     }

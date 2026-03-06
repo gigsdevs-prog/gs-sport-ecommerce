@@ -41,11 +41,7 @@ function ShopContent() {
         .eq('active', true);
 
       if (selectedCategory) {
-        const { data: cat } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('slug', selectedCategory)
-          .single();
+        const cat = categories.find(c => c.slug === selectedCategory);
         if (cat) {
           query = query.eq('category_id', cat.id);
         }
@@ -82,7 +78,7 @@ function ShopContent() {
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [selectedCategory, searchQuery, priceRange, sortBy]);
+  }, [selectedCategory, searchQuery, priceRange, sortBy, categories]);
 
   useEffect(() => {
     mounted.current = true;

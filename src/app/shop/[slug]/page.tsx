@@ -16,6 +16,7 @@ import { useCartStore } from '@/store/cart';
 import { useWishlistStore } from '@/store/wishlist';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice, getDiscountPercentage } from '@/utils';
+import { withTimeout } from '@/utils';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
 import ScrollReveal from '@/components/ui/ScrollReveal';
@@ -58,12 +59,15 @@ export default function ProductDetailPage() {
 
   const fetchProduct = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('slug', slug)
-        .eq('active', true)
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('slug', slug)
+          .eq('active', true)
+          .single(),
+        8000
+      );
       
       if (error) console.error('Failed to fetch product:', error);
 
@@ -72,31 +76,29 @@ export default function ProductDetailPage() {
         if (data.sizes?.length) setSelectedSize(data.sizes[0]);
         if (data.colors?.length) setSelectedColor(data.colors[0]);
 
-        // Fetch related products
-        try {
-          const { data: related } = await supabase
-            .from('products')
-            .select('*')
-            .eq('category_id', data.category_id)
-            .eq('active', true)
-            .neq('id', data.id)
-            .limit(4);
-          if (mounted.current && related) setRelatedProducts(related);
-        } catch (relErr) {
-          console.error('Related products fetch error:', relErr);
-        }
-
-        // Fetch reviews
-        try {
-          const { data: reviewData } = await supabase
-            .from('reviews')
-            .select('*, user:users(full_name, avatar_url)')
-            .eq('product_id', data.id)
-            .order('created_at', { ascending: false });
-          if (mounted.current && reviewData) setReviews(reviewData);
-        } catch (revErr) {
-          console.error('Reviews fetch error:', revErr);
-        }
+        // Fetch related products and reviews in parallel
+        const [relatedResult, reviewsResult] = await Promise.all([
+          withTimeout(
+            supabase
+              .from('products')
+              .select('*')
+              .eq('category_id', data.category_id)
+              .eq('active', true)
+              .neq('id', data.id)
+              .limit(4),
+            8000
+          ).catch(err => { console.error('Related products fetch error:', err); return { data: null }; }),
+          withTimeout(
+            supabase
+              .from('reviews')
+              .select('*, user:users(full_name, avatar_url)')
+              .eq('product_id', data.id)
+              .order('created_at', { ascending: false }),
+            8000
+          ).catch(err => { console.error('Reviews fetch error:', err); return { data: null }; }),
+        ]);
+        if (mounted.current && relatedResult.data) setRelatedProducts(relatedResult.data);
+        if (mounted.current && reviewsResult.data) setReviews(reviewsResult.data as Review[]);
       }
     } catch (err) {
       console.error('Product fetch error:', err);

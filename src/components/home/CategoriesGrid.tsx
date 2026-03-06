@@ -4,106 +4,32 @@
 
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode } from 'swiper/modules';
-import { withTimeout } from '@/utils';
 import type { Category } from '@/types';
 
 import 'swiper/css';
 import 'swiper/css/free-mode';
 
-const supabase = createClient();
+interface CategoriesGridProps {
+  categories: Category[];
+  categoryImages: Record<string, string>;
+}
 
-export default function CategoriesGrid() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [bestSellerImages, setBestSellerImages] = useState<Record<string, string>>({});
+export default function CategoriesGrid({ categories, categoryImages }: CategoriesGridProps) {
   const { t } = useLanguage();
-  const mounted = useRef(true);
 
-  const fallbackCategories = [
+  const fallbackCategories: { name: string; slug: string; image: string | null }[] = [
     { name: t('category_men'), slug: 'men', image: null },
     { name: t('category_women'), slug: 'women', image: null },
     { name: t('category_accessories'), slug: 'accessories', image: null },
     { name: t('category_shoes'), slug: 'shoes', image: null },
   ];
-
-  useEffect(() => {
-    mounted.current = true;
-
-    const fetchData = async () => {
-      try {
-        // Fetch categories
-        const { data: catData, error: catError } = await withTimeout(
-          supabase
-            .from('categories')
-            .select('*')
-            .eq('active', true)
-            .order('name'),
-          8000
-        );
-        if (catError) console.error('Failed to fetch categories:', catError);
-
-        if (mounted.current && catData && catData.length > 0) {
-          setCategories(catData);
-
-          const imageMap: Record<string, string> = {};
-
-          const { data: bestSellers } = await supabase
-            .from('products')
-            .select('category_id, images')
-            .eq('best_seller', true)
-            .eq('active', true)
-            .order('created_at', { ascending: false });
-
-          if (bestSellers) {
-            for (const product of bestSellers) {
-              if (product.category_id && product.images?.length > 0 && !imageMap[product.category_id]) {
-                imageMap[product.category_id] = product.images[0];
-              }
-            }
-          }
-
-          const missingCategoryIds = catData
-            .filter(c => !imageMap[c.id])
-            .map(c => c.id);
-
-          if (missingCategoryIds.length > 0) {
-            const { data: fallbackProducts } = await supabase
-              .from('products')
-              .select('category_id, images')
-              .in('category_id', missingCategoryIds)
-              .eq('active', true)
-              .order('created_at', { ascending: false });
-
-            if (fallbackProducts) {
-              for (const product of fallbackProducts) {
-                if (product.category_id && product.images?.length > 0 && !imageMap[product.category_id]) {
-                  imageMap[product.category_id] = product.images[0];
-                }
-              }
-            }
-          }
-
-          if (mounted.current) setBestSellerImages(imageMap);
-        }
-      } catch (err) {
-        console.error('Categories fetch error:', err);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
 
   const displayCategories = categories.length > 0 ? categories : fallbackCategories;
 
@@ -129,7 +55,7 @@ export default function CategoriesGrid() {
         >
           {displayCategories.map((category) => {
             const catId = 'id' in category ? (category as Category).id : '';
-            const bestSellerImg = catId ? bestSellerImages[catId] : null;
+            const bestSellerImg = catId ? categoryImages[catId] : null;
             const displayImage = bestSellerImg || category.image;
 
             return (
