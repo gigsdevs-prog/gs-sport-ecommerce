@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       .from('orders')
       .insert({
         user_id: userId,
-        status: isCash ? 'pending' : 'awaiting_payment',
+        status: 'pending',
         payment_method: isCash ? 'cash' : 'card',
         total,
         subtotal,

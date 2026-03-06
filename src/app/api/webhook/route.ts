@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     // 4. Find order in database
     const { data: order, error: findError } = await supabase
       .from('orders')
-      .select('id, status, bog_order_id')
+      .select('id, status, bog_order_id, bog_payment_hash')
       .eq('bog_order_id', order_id)
       .single();
 
@@ -134,8 +134,8 @@ export async function POST(request: Request) {
 
     // 5. Process based on verified status
     if (verifiedStatus === 'COMPLETED' || verifiedStatus === 'CAPTURED') {
-      // Skip if already processed
-      if (order.status !== 'awaiting_payment') {
+      // Skip if already processed (card orders start as 'pending' with no payment hash)
+      if (order.status !== 'pending' || order.bog_payment_hash) {
         await logWebhookEvent(supabase, {
           event_type: 'payment_callback',
           bog_order_id: order_id,
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
       await supabase
         .from('orders')
         .update({
-          status: 'pending',
+          status: 'processing',
           bog_payment_hash: verifiedPaymentHash || null,
           bog_transaction_id: verifiedTransactionId || null,
         })
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
 
     } else if (verifiedStatus === 'REJECTED' || verifiedStatus === 'ERROR' || verifiedStatus === 'TIMEOUT') {
       // Payment failed
-      if (order.status === 'awaiting_payment') {
+      if (order.status === 'pending' && !order.bog_payment_hash) {
         await supabase
           .from('orders')
           .update({
