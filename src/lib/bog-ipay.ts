@@ -69,7 +69,7 @@ export async function createPaymentOrder(params: {
   locale?: 'ka' | 'en';
 }): Promise<{ orderId: string; redirectUrl: string }> {
   const token = await getAccessToken();
-  const { shopOrderId, amount, currency = 'GEL', items, locale = 'ka' } = params;
+  const { shopOrderId, amount, currency = 'GEL', items } = params;
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gssport.ge').trim();
 
@@ -89,7 +89,7 @@ export async function createPaymentOrder(params: {
       success: `${siteUrl}/api/webhook?shop_order_id=${shopOrderId}`,
       fail: `${siteUrl}/checkout?payment=failed`,
     },
-    language: locale,
+    language: 'ka',
   };
 
   console.log('[BOG] Creating order, request:', JSON.stringify(orderRequest));
