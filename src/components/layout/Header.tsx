@@ -8,7 +8,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Heart, Menu, X, Settings } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
@@ -140,14 +139,11 @@ export default function Header() {
             {/* CENTER: Logo (absolutely centered) */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <Link href="/">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={logoUrl}
                   alt="GS SPORT"
-                  width={200}
-                  height={60}
-                  className="h-12 sm:h-14 lg:h-16 w-auto object-contain"
-                  priority
-                  unoptimized
+                  className="h-12 sm:h-14 lg:h-16 w-auto"
                 />
               </Link>
             </div>
@@ -259,7 +255,8 @@ export default function Header() {
             >
               <div className="flex items-center justify-between p-6 border-b border-neutral-100">
                 <div className="flex items-center gap-2">
-                  <Image src={logoUrl} alt="GS SPORT" width={100} height={30} className="h-10 w-auto object-contain" unoptimized />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logoUrl} alt="GS SPORT" className="h-10 w-auto" />
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
