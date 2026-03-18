@@ -23,8 +23,11 @@ const CONTENT_GROUPS: Record<string, { label: string; keys: { key: string; label
   topbar: {
     label: 'Top Bar',
     keys: [
-      { key: 'top_bar_text', label: 'Left Text (e.g., Free shipping...)' },
-      { key: 'top_bar_right', label: 'Right Text' },
+      { key: 'topbar_free_shipping', label: 'Message 1 (e.g., Free shipping...)' },
+      { key: 'topbar_new_arrivals', label: 'Message 2 (e.g., New arrivals...)' },
+      { key: 'topbar_premium_athletic', label: 'Message 3 (e.g., Premium brand text)' },
+      { key: 'topbar_easy_returns', label: 'Message 4 (e.g., Easy returns...)' },
+      { key: 'topbar_signup_discount', label: 'Message 5 (e.g., Sign up discount...)' },
     ],
   },
   hero: {
@@ -315,7 +318,15 @@ export default function AdminContentPage() {
                           }`}
                         />
                       )}
-                      <p className="text-[10px] text-neutral-300 mt-0.5 font-mono">{entry.key}</p>
+                      {entry.modified ? (
+                        <p className="text-[10px] mt-1 font-mono">
+                          <span className="text-red-400 line-through">{entry.original}</span>
+                          <span className="text-neutral-300 mx-1">→</span>
+                          <span className="text-green-500">{entry.value}</span>
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-neutral-300 mt-0.5 font-mono">{entry.key}</p>
+                      )}
                     </div>
                   ))}
                 </div>

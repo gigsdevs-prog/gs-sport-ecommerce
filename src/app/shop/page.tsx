@@ -13,10 +13,12 @@ import ProductCard from '@/components/product/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { withTimeout } from '@/utils';
 import type { Product, Category } from '@/types';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const supabase = createClient();
 
 function ShopContent() {
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const categorySlug = searchParams.get('category');
   const searchQuery = searchParams.get('search');
@@ -124,10 +126,10 @@ function ShopContent() {
       {/* Page header */}
       <div className="mb-8 lg:mb-12">
         <h1 className="text-3xl lg:text-4xl font-light tracking-wide">
-          {searchQuery ? `Search: "${searchQuery}"` : selectedCategory ? selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1) : 'All Products'}
+          {searchQuery ? `${t('search')}: "${searchQuery}"` : selectedCategory ? selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1) : t('all_products')}
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
-          {loading ? 'Loading...' : `${products.length} products`}
+          {loading ? t('loading_short') : `${products.length} ${t('products_label')}`}
         </p>
       </div>
 
@@ -138,11 +140,11 @@ function ShopContent() {
           className="flex items-center gap-2 text-sm text-neutral-600 hover:text-black transition-colors"
         >
           <SlidersHorizontal size={16} />
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
+          {showFilters ? t('hide_filters') : t('show_filters')}
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-neutral-500 hidden sm:block">Sort by:</span>
+          <span className="text-xs text-neutral-500 hidden sm:block">{t('sort_by')}</span>
           <div className="relative">
             <select
               id="sort-by"
@@ -151,10 +153,10 @@ function ShopContent() {
               onChange={e => setSortBy(e.target.value)}
               className="appearance-none bg-transparent text-sm pr-6 cursor-pointer outline-none"
             >
-              <option value="newest">Newest</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="name-asc">Name: A to Z</option>
+              <option value="newest">{t('newest')}</option>
+              <option value="price-asc">{t('price_low_high')}</option>
+              <option value="price-desc">{t('price_high_low')}</option>
+              <option value="name-asc">{t('name_a_z')}</option>
             </select>
             <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400" />
           </div>
@@ -176,13 +178,13 @@ function ShopContent() {
             <div className="sticky top-32 space-y-8">
               {/* Categories */}
               <div>
-                <h3 className="text-xs tracking-widest uppercase font-semibold mb-4">Categories</h3>
+                <h3 className="text-xs tracking-widest uppercase font-semibold mb-4">{t('categories')}</h3>
                 <div className="space-y-2">
                   <button
                     onClick={() => setSelectedCategory('')}
                     className={`block text-sm ${!selectedCategory ? 'text-black font-medium' : 'text-neutral-500 hover:text-black'} transition-colors`}
                   >
-                    All
+                    {t('all')}
                   </button>
                   {categories.map(cat => (
                     <button
@@ -198,7 +200,7 @@ function ShopContent() {
 
               {/* Price Range */}
               <div>
-                <h3 className="text-xs tracking-widest uppercase font-semibold mb-4">Price Range</h3>
+                <h3 className="text-xs tracking-widest uppercase font-semibold mb-4">{t('price_range')}</h3>
                 <div className="space-y-3">
                   <input
                     id="price-range"
@@ -224,7 +226,7 @@ function ShopContent() {
                   className="flex items-center gap-1 text-sm text-neutral-500 hover:text-black transition-colors"
                 >
                   <X size={14} />
-                  Clear filters
+                  {t('clear_filters')}
                 </button>
               )}
 
@@ -233,7 +235,7 @@ function ShopContent() {
                 onClick={() => setShowFilters(false)}
                 className="lg:hidden w-full py-3 bg-black text-white text-sm rounded-lg mt-4"
               >
-                Apply Filters
+                {t('apply_filters')}
               </button>
             </div>
           </motion.aside>
@@ -246,8 +248,8 @@ function ShopContent() {
             <ProductGridSkeleton count={8} />
           ) : products.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-neutral-500 text-lg mb-2">No products found</p>
-              <p className="text-neutral-400 text-sm">Try adjusting your filters or search query</p>
+              <p className="text-neutral-500 text-lg mb-2">{t('no_products_found')}</p>
+              <p className="text-neutral-400 text-sm">{t('try_adjusting_filters')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">

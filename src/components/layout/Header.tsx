@@ -52,6 +52,12 @@ export default function Header() {
     return () => clearInterval(interval);
   }, []);
 
+  const getTopBarMessage = useCallback((key: string) => {
+    const cmsValue = getText(key);
+    // Use CMS value if available, otherwise fall back to translation
+    return cmsValue || t(key);
+  }, [getText, t]);
+
   const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -71,9 +77,9 @@ export default function Header() {
         }`}
       >
         {/* Top bar — animated rotating messages */}
-        <div className="border-b border-neutral-100 bg-neutral-950 text-white overflow-hidden">
+        <div className="border-b border-neutral-100 bg-neutral-950 text-white overflow-visible">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-9 relative">
+            <div className="flex items-center justify-between h-9 relative z-20">
               <div className="w-16" />
               <div className="flex-1 flex justify-center relative">
                 <AnimatePresence mode="wait">
@@ -83,9 +89,9 @@ export default function Header() {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -20, opacity: 0 }}
                     transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    className="text-[10px] sm:text-xs tracking-[0.25em] uppercase font-light absolute"
+                    className="absolute inset-0 flex items-center justify-center text-[10px] sm:text-xs tracking-[0.25em] uppercase font-light leading-none"
                   >
-                    {t(TOP_BAR_MESSAGES[topBarIndex])}
+                    {getTopBarMessage(TOP_BAR_MESSAGES[topBarIndex])}
                   </motion.span>
                 </AnimatePresence>
               </div>
@@ -138,9 +144,10 @@ export default function Header() {
                   src={logoUrl}
                   alt="GS SPORT"
                   width={200}
-                  height={200}
-                  className="h-12 sm:h-14 lg:h-16 w-auto"
+                  height={60}
+                  className="h-12 sm:h-14 lg:h-16 w-auto object-contain"
                   priority
+                  unoptimized
                 />
               </Link>
             </div>
@@ -252,7 +259,7 @@ export default function Header() {
             >
               <div className="flex items-center justify-between p-6 border-b border-neutral-100">
                 <div className="flex items-center gap-2">
-                  <Image src={logoUrl} alt="GS SPORT" width={100} height={100} className="h-10 w-auto" />
+                  <Image src={logoUrl} alt="GS SPORT" width={100} height={30} className="h-10 w-auto object-contain" unoptimized />
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

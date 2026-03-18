@@ -135,8 +135,8 @@ export async function POST(request: Request) {
     // 5. Process based on verified status
     const normalizedStatus = verifiedStatus?.toUpperCase();
     if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'CAPTURED' || normalizedStatus === 'SUCCEEDED') {
-      // Skip if already processed (card orders start as 'pending' with no payment hash)
-      if (order.status !== 'pending' || order.bog_payment_hash) {
+      // Skip if already processed (card orders start as 'awaiting_payment')
+      if ((order.status !== 'pending' && order.status !== 'awaiting_payment') || order.bog_payment_hash) {
         await logWebhookEvent(supabase, {
           event_type: 'payment_callback',
           bog_order_id: order_id,
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
 
     } else if (normalizedStatus === 'REJECTED' || normalizedStatus === 'ERROR' || normalizedStatus === 'TIMEOUT' || normalizedStatus === 'FAILED') {
       // Payment failed
-      if (order.status === 'pending' && !order.bog_payment_hash) {
+      if ((order.status === 'pending' || order.status === 'awaiting_payment') && !order.bog_payment_hash) {
         await supabase
           .from('orders')
           .update({
@@ -319,9 +319,8 @@ export async function GET(request: Request) {
     }
   }
 
-  // If verification failed or pending, still redirect to success
-  // (the POST webhook callback handles the actual status update)
-  if (dbOrder.status === 'processing' || dbOrder.status === 'pending') {
+  // Only redirect to success if payment was confirmed (status updated by POST callback)
+  if (dbOrder.status === 'processing') {
     return NextResponse.redirect(
       new URL(`/checkout/success?order_id=${dbOrder.id}`, request.url)
     );

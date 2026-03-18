@@ -37,6 +37,9 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -227,43 +230,84 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <motion.div
-              className="relative aspect-[3/4] bg-neutral-50 rounded-lg overflow-hidden cursor-zoom-in"
+            <div
+              className="relative aspect-[3/4] bg-neutral-50 rounded-lg overflow-hidden"
+              onTouchStart={(e) => {
+                touchStartX.current = e.touches[0].clientX;
+                touchStartY.current = e.touches[0].clientY;
+              }}
+              onTouchEnd={(e) => {
+                const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+                const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                  if (deltaX < 0 && selectedImage < mediaItems.length - 1) {
+                    setSelectedImage(prev => prev + 1);
+                  } else if (deltaX > 0 && selectedImage > 0) {
+                    setSelectedImage(prev => prev - 1);
+                  }
+                }
+              }}
               onClick={() => mediaItems[selectedImage]?.type === 'image' && setZoomOpen(true)}
-              layoutId="product-image"
+              style={{ cursor: mediaItems[selectedImage]?.type === 'image' ? 'zoom-in' : 'default' }}
             >
-              {mediaItems[selectedImage]?.type === 'video' ? (
-                <video
-                  src={mediaItems[selectedImage].url}
-                  controls
-                  playsInline
-                  className="w-full h-full object-contain bg-black"
-                />
-              ) : mediaItems[selectedImage]?.url ? (
-                <Image
-                  src={mediaItems[selectedImage].url}
-                  alt={product.name}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-neutral-200">
-                  <ShoppingBag size={64} />
-                </div>
-              )}
+              <AnimatePresence initial={false} mode="wait">
+                <motion.div
+                  key={selectedImage}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  className="absolute inset-0"
+                >
+                  {mediaItems[selectedImage]?.type === 'video' ? (
+                    <video
+                      ref={videoRef}
+                      src={mediaItems[selectedImage].url}
+                      controls
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  ) : mediaItems[selectedImage]?.url ? (
+                    <Image
+                      src={mediaItems[selectedImage].url}
+                      alt={product.name}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      priority
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-200">
+                      <ShoppingBag size={64} />
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
               {mediaItems[selectedImage]?.type === 'image' && (
-                <div className="absolute top-4 right-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center">
+                <div className="absolute top-4 right-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center z-10">
                   <ZoomIn size={18} className="text-neutral-600" />
                 </div>
               )}
               {discount > 0 && (
-                <span className="absolute top-4 left-4 bg-red-500 text-white text-xs tracking-wider uppercase px-3 py-1 rounded">
+                <span className="absolute top-4 left-4 bg-red-500 text-white text-xs tracking-wider uppercase px-3 py-1 rounded z-10">
                   -{discount}%
                 </span>
               )}
-            </motion.div>
+              {/* Swipe indicators */}
+              {mediaItems.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                  {mediaItems.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        i === selectedImage ? 'bg-black' : 'bg-black/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Thumbnails */}
             {mediaItems.length > 1 && (
@@ -271,7 +315,9 @@ export default function ProductDetailPage() {
                 {mediaItems.map((item, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedImage(i)}
+                    onClick={() => {
+                      setSelectedImage(i);
+                    }}
                     className={`relative w-20 h-24 flex-shrink-0 rounded overflow-hidden border-2 transition-colors ${
                       i === selectedImage ? 'border-black' : 'border-transparent'
                     }`}

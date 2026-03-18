@@ -14,12 +14,14 @@ import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { useLanguage } from '@/hooks/useLanguage';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -27,18 +29,27 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
+    const normalizedEmail = data.email.trim().toLowerCase();
+
     const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
+      email: normalizedEmail,
       password: data.password,
     });
 
     if (error) {
-      toast.error(error.message);
+      const errorMessage = error.message.toLowerCase();
+      if (errorMessage.includes('invalid login credentials')) {
+        toast.error(t('auth_invalid_credentials'));
+      } else if (errorMessage.includes('email not confirmed')) {
+        toast.error(t('auth_check_email_verification'));
+      } else {
+        toast.error(error.message || t('auth_unexpected_error'));
+      }
       setLoading(false);
       return;
     }
 
-    toast.success('Welcome back!');
+    toast.success(t('welcome_back'));
     router.push('/');
     router.refresh();
   };
@@ -47,7 +58,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/account`,
       },
     });
     if (error) toast.error(error.message);
@@ -68,19 +79,19 @@ export default function LoginPage() {
             alt="GS SPORT"
             className="h-16 mx-auto mb-4"
           />
-          <p className="mt-2 text-sm text-neutral-500">Sign in to your account</p>
+          <p className="mt-2 text-sm text-neutral-500">{t('sign_in_account')}</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <Input
-            label="Email"
+            label={t('email')}
             type="email"
             placeholder="your@email.com"
             error={errors.email?.message}
             {...register('email')}
           />
           <Input
-            label="Password"
+            label={t('password')}
             type="password"
             placeholder="••••••••"
             error={errors.password?.message}
@@ -92,12 +103,12 @@ export default function LoginPage() {
               href="/auth/forgot-password"
               className="text-xs text-neutral-500 hover:text-black transition-colors"
             >
-              Forgot password?
+              {t('forgot_password')}
             </Link>
           </div>
 
           <Button type="submit" fullWidth loading={loading}>
-            Sign In
+            {t('sign_in')}
           </Button>
         </form>
 
@@ -107,7 +118,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-neutral-200" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-4 text-neutral-400 uppercase tracking-widest">or</span>
+              <span className="bg-white px-4 text-neutral-400 uppercase tracking-widest">{t('or')}</span>
             </div>
           </div>
 
@@ -121,19 +132,19 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Continue with Google
+            {t('continue_google')}
           </button>
         </div>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-neutral-600 mb-3">
-            Don&apos;t have an account?
+            {t('no_account')}
           </p>
           <Link
             href="/auth/register"
             className="inline-block w-full py-3 border-2 border-black text-black text-sm tracking-[0.15em] uppercase font-medium hover:bg-black hover:text-white transition-all duration-300 text-center"
           >
-            Create an Account
+            {t('create_account')}
           </Link>
         </div>
       </motion.div>

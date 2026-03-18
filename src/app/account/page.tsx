@@ -93,9 +93,13 @@ export default function Page() {
   }, [user, loading, profile, router, fetchDashboardData]);
 
   const handleSignOut = async () => {
-    await signOut();
-    toast.success('Signed out');
-    router.push('/');
+    try {
+      await signOut();
+      toast.success(t('signed_out'));
+    } finally {
+      router.replace('/auth/login');
+      router.refresh();
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

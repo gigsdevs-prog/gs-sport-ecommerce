@@ -6,43 +6,18 @@
 
 import { useLanguage } from '@/hooks/useLanguage';
 
-const faqs = [
-  {
-    q: 'How long does shipping take?',
-    a: 'Standard shipping takes 3-7 business days. Express delivery is available for 1-3 business days at an additional cost.',
-  },
-  {
-    q: 'What is your return policy?',
-    a: 'We accept returns within 30 days of purchase. Items must be unworn, unwashed, and in original condition with tags attached.',
-  },
-  {
-    q: 'Do you offer international shipping?',
-    a: 'Yes, we ship to most countries worldwide. International shipping rates and delivery times vary by destination.',
-  },
-  {
-    q: 'How can I track my order?',
-    a: 'Once your order ships, you\'ll receive a confirmation email with a tracking number. You can also check your order status in your account.',
-  },
-  {
-    q: 'What payment methods do you accept?',
-    a: 'We accept all major credit/debit cards (Visa, Mastercard, American Express) through BOG iPay (Bank of Georgia).',
-  },
-  {
-    q: 'How do I find my size?',
-    a: 'Check our Size Guide page for detailed measurements. If you\'re between sizes, we recommend going up one size.',
-  },
-  {
-    q: 'Can I change or cancel my order?',
-    a: 'Orders can be modified or cancelled within 1 hour of placement. After that, the order enters processing and cannot be changed.',
-  },
-  {
-    q: 'Do you have a physical store?',
-    a: 'We are primarily an online store based in Tbilisi, Georgia. Follow our social media for pop-up event announcements.',
-  },
-];
-
 export default function FAQPage() {
   const { t } = useLanguage();
+  const faqItems = [
+    { q: t('faq_q1'), a: t('faq_a1') },
+    { q: t('faq_q2'), a: t('faq_a2') },
+    { q: t('faq_q3'), a: t('faq_a3') },
+    { q: t('faq_q4'), a: t('faq_a4') },
+    { q: t('faq_q5'), a: t('faq_a5') },
+    { q: t('faq_q6'), a: t('faq_a6') },
+    { q: t('faq_q7'), a: t('faq_a7') },
+    { q: t('faq_q8'), a: t('faq_a8') },
+  ];
 
   return (
     <main className="min-h-screen bg-white pt-32 pb-20">
@@ -53,7 +28,7 @@ export default function FAQPage() {
         </p>
 
         <div className="space-y-6">
-          {faqs.map((faq, i) => (
+          {faqItems.map((faq, i) => (
             <div key={i} className="border border-neutral-200 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-2">{faq.q}</h3>
               <p className="text-neutral-600 text-sm leading-relaxed">{faq.a}</p>
@@ -68,7 +43,7 @@ export default function FAQPage() {
             href="/contact"
             className="inline-block bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
           >
-            Contact Us
+            {t('contact_us')}
           </a>
         </div>
       </div>

@@ -157,12 +157,21 @@ export default function AdminOrdersPage() {
                       <h4 className="text-xs tracking-widest uppercase font-medium mb-3">Items</h4>
                       <div className="space-y-2">
                         {order.items?.map(item => (
-                          <div key={item.id} className="flex justify-between text-sm">
-                            <span className="text-neutral-600">
-                              {item.product?.name || 'Product'} × {item.quantity}
-                              {item.size && ` (${item.size})`}
-                            </span>
-                            <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
+                          <div key={item.id} className="flex items-center justify-between text-sm gap-3">
+                            <div className="flex items-center gap-3">
+                              {item.product?.images?.[0] && (
+                                <img
+                                  src={item.product.images[0]}
+                                  alt={item.product?.name || 'Product'}
+                                  className="w-12 h-12 object-cover rounded border border-neutral-100 flex-shrink-0"
+                                />
+                              )}
+                              <span className="text-neutral-600">
+                                {item.product?.name || 'Product'} × {item.quantity}
+                                {item.size && ` (${item.size})`}
+                              </span>
+                            </div>
+                            <span className="font-medium flex-shrink-0">{formatPrice(item.price * item.quantity)}</span>
                           </div>
                         ))}
                       </div>
