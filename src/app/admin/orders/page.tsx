@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -20,6 +20,14 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  const statusCounts = useMemo(() => {
+    return orders.reduce<Record<string, number>>((acc, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {});
+  }, [orders]);
+
   const fetchOrders = useCallback(async () => {
     try {
       let query = supabase
@@ -98,6 +106,13 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
+      <div className="mb-6 flex flex-wrap gap-2 text-xs">
+        <span className="px-3 py-1 rounded-full bg-neutral-100 text-neutral-700">All: {orders.length}</span>
+        <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-700">Awaiting Payment: {statusCounts.awaiting_payment || 0}</span>
+        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700">Processing: {statusCounts.processing || 0}</span>
+        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700">Delivered: {statusCounts.delivered || 0}</span>
+      </div>
+
       {/* Orders */}
       <div className="space-y-3">
         {loading ? (
@@ -108,24 +123,38 @@ export default function AdminOrdersPage() {
             <p className="text-neutral-500">No orders found</p>
           </div>
         ) : (
-          orders.map(order => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-white rounded-xl border border-neutral-100 overflow-hidden"
-            >
+          orders.map(order => {
+            const firstItemImage = order.items?.[0]?.product?.images?.[0];
+            const itemCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+
+            return (
+              <motion.div
+                key={order.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-white rounded-xl border border-neutral-100 overflow-hidden"
+              >
               <div
                 className="p-5 flex items-center justify-between cursor-pointer hover:bg-neutral-50 transition-colors"
                 onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
               >
                 <div className="flex items-center gap-6">
+                  {firstItemImage ? (
+                    <img
+                      src={firstItemImage}
+                      alt="First product"
+                      className="w-12 h-12 rounded border border-neutral-100 object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded border border-neutral-100 bg-neutral-50" />
+                  )}
                   <div>
                     <p className="text-sm font-mono font-medium">#{order.id.slice(0, 8).toUpperCase()}</p>
                     <p className="text-xs text-neutral-400 mt-0.5">{formatDate(order.created_at)}</p>
                   </div>
                   <div>
                     <p className="text-sm">{order.user?.full_name || order.user?.email || 'Guest'}</p>
+                    <p className="text-xs text-neutral-400 mt-0.5">{itemCount} item{itemCount === 1 ? '' : 's'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -169,6 +198,7 @@ export default function AdminOrdersPage() {
                               <span className="text-neutral-600">
                                 {item.product?.name || 'Product'} × {item.quantity}
                                 {item.size && ` (${item.size})`}
+                                {item.color && ` - ${item.color}`}
                               </span>
                             </div>
                             <span className="font-medium flex-shrink-0">{formatPrice(item.price * item.quantity)}</span>
@@ -196,6 +226,23 @@ export default function AdminOrdersPage() {
                       )}
 
                       <h4 className="text-xs tracking-widest uppercase font-medium mb-3 mt-6">Update Status</h4>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {(['processing', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map(status => (
+                          <button
+                            key={status}
+                            type="button"
+                            onClick={() => updateStatus(order.id, status)}
+                            disabled={order.status === status}
+                            className={`px-3 py-2 border rounded text-xs uppercase tracking-wide transition-colors ${
+                              order.status === status
+                                ? 'bg-black text-white border-black cursor-not-allowed'
+                                : 'border-neutral-200 hover:border-black'
+                            }`}
+                          >
+                            {status.replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
                       <select
                         value={order.status}
                         onChange={e => updateStatus(order.id, e.target.value as OrderStatus)}
@@ -209,8 +256,9 @@ export default function AdminOrdersPage() {
                   </div>
                 </motion.div>
               )}
-            </motion.div>
-          ))
+              </motion.div>
+            );
+          })
         )}
       </div>
     </div>
